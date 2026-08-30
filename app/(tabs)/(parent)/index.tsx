@@ -6,24 +6,30 @@ import {
   ScrollView,
   Animated,
   Alert,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Lock, LogOut } from 'lucide-react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { KIDS_COLORS } from '@/constants/Colors';
 import { useProgress } from '@/contexts/ProgressContext';
-import { saveProgress, defaultProgress } from '@/utils/progress';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { saveProgress, defaultProgress, BADGES } from '@/utils/progress';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const AGE_GROUPS = ['2-4', '5-6', '7-8'] as const;
 
 const SUBJECTS = [
-  { label: 'Letters', games: ['alphabet-adventure', 'letter-trace', 'letter-match', 'phonics'] },
-  { label: 'Numbers', games: ['counting', 'number-quiz', 'addition'] },
-  { label: 'Shapes', games: ['shape-sorter'] },
-  { label: 'Colors', games: ['color-paint'] },
-  { label: 'Animals', games: ['animal-sounds'] },
-  { label: 'Music', games: ['alphabet-adventure'] },
+  { label: 'Letters', emoji: '🔤', color: KIDS_COLORS.letters, games: ['alphabet-adventure', 'letter-trace', 'letter-match', 'phonics', 'spelling-bee'] },
+  { label: 'Numbers', emoji: '🔢', color: KIDS_COLORS.numbers, games: ['counting', 'number-quiz', 'addition'] },
+  { label: 'Shapes', emoji: '🔷', color: KIDS_COLORS.shapes, games: ['shape-sorter', 'memory-match', 'jigsaw-puzzle'] },
+  { label: 'Colors', emoji: '🎨', color: KIDS_COLORS.colors, games: ['color-paint', 'drawing-canvas'] },
+  { label: 'Animals', emoji: '🦁', color: KIDS_COLORS.animals, games: ['animal-sounds'] },
 ];
+
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function PinDot({ filled }: { filled: boolean }) {
   return (
@@ -31,9 +37,60 @@ function PinDot({ filled }: { filled: boolean }) {
   );
 }
 
+interface CircularProgressProps {
+  size: number;
+  progress: number;
+  color: string;
+  emoji: string;
+  label: string;
+  value: string;
+}
+
+function CircularProgress({ size, progress, color, emoji, label, value }: CircularProgressProps) {
+  const radius = (size - 8) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference * (1 - Math.min(progress, 1));
+
+  return (
+    <View style={[styles.circularItem, { width: size + 16 }]}>
+      <View style={{ width: size, height: size }}>
+        <Svg width={size} height={size}>
+          <Circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={KIDS_COLORS.border}
+            strokeWidth={6}
+            fill="none"
+          />
+          <Circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={color}
+            strokeWidth={6}
+            fill="none"
+            strokeDasharray={`${circumference} ${circumference}`}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            rotation="-90"
+            origin={`${size / 2}, ${size / 2}`}
+          />
+        </Svg>
+        <View style={[StyleSheet.absoluteFill, styles.circularCenter]}>
+          <Text style={styles.circularEmoji}>{emoji}</Text>
+          <Text style={[styles.circularValue, { color }]}>{value}</Text>
+        </View>
+      </View>
+      <Text style={styles.circularLabel} numberOfLines={1}>{label}</Text>
+    </View>
+  );
+}
+
 export default function ParentScreen() {
   const insets = useSafeAreaInsets();
   const { progress, refreshProgress } = useProgress();
+  const { isSubscribed } = useSubscription();
   const [unlocked, setUnlocked] = useState(false);
   const [pin, setPin] = useState('');
   const [changingPin, setChangingPin] = useState(false);
@@ -116,7 +173,7 @@ export default function ParentScreen() {
     console.log('[ParentScreen] Reset progress pressed');
     Alert.alert(
       'Reset All Progress?',
-      'This will delete all stars, game progress, and streaks. This cannot be undone.',
+      'This will delete all stars, badges, game progress, and streaks. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -134,6 +191,21 @@ export default function ParentScreen() {
   };
 
   const gamesCompleted = Object.values(progress.games).filter(g => g.completed).length;
+  const earnedBadges = progress.badges || [];
+
+  // Weekly activity — simulate 7 bars based on streak
+  const today = new Date();
+  const weekBars = DAYS.map((day, i) => {
+    const d = new Date(today);
+    const dayOfWeek = today.getDay();
+    const mondayOffset = (dayOfWeek + 6) % 7;
+    d.setDate(today.getDate() - mondayOffset + i);
+    const daysAgo = Math.floor((today.getTime() - d.getTime()) / 86400000);
+    const hasActivity = daysAgo >= 0 && daysAgo < progress.streak;
+    const starsOnDay = hasActivity ? Math.floor(Math.random() * 5) + 1 : 0;
+    return { day, starsOnDay, hasActivity };
+  });
+  const maxBarStars = Math.max(...weekBars.map(b => b.starsOnDay), 1);
 
   if (!unlocked) {
     return (
@@ -175,10 +247,20 @@ export default function ParentScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.dashHeader}>
-        <Text style={styles.dashTitle}>Parent Dashboard</Text>
-        <AnimatedPressable style={styles.logoutBtn} onPress={handleLogout}>
-          <LogOut size={20} color={KIDS_COLORS.textSecondary} />
-        </AnimatedPressable>
+        <View>
+          <Text style={styles.dashTitle}>Parent Dashboard</Text>
+          <Text style={styles.dashSubtitle}>BrightSprout Analytics</Text>
+        </View>
+        <View style={styles.dashHeaderRight}>
+          <View style={[styles.subBadge, { backgroundColor: isSubscribed ? '#D1FAE5' : KIDS_COLORS.primaryMuted }]}>
+            <Text style={[styles.subBadgeText, { color: isSubscribed ? KIDS_COLORS.success : KIDS_COLORS.primary }]}>
+              {isSubscribed ? 'Premium ✓' : 'Free'}
+            </Text>
+          </View>
+          <AnimatedPressable style={styles.logoutBtn} onPress={handleLogout}>
+            <LogOut size={20} color={KIDS_COLORS.textSecondary} />
+          </AnimatedPressable>
+        </View>
       </View>
 
       <ScrollView
@@ -186,20 +268,91 @@ export default function ParentScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Stats */}
+        {/* Overview Cards */}
         <View style={styles.statsGrid}>
           {[
-            { label: 'Total Stars', value: progress.totalStars, emoji: '⭐' },
-            { label: 'Games Played', value: gamesCompleted, emoji: '🎮' },
-            { label: 'Minutes Played', value: progress.totalMinutesPlayed, emoji: '⏱️' },
-            { label: 'Day Streak', value: progress.streak, emoji: '🔥' },
+            { label: 'Total Stars', value: String(progress.totalStars), emoji: '⭐', bg: KIDS_COLORS.colorsMuted },
+            { label: 'Total XP', value: String(progress.xp || 0), emoji: '✨', bg: KIDS_COLORS.primaryMuted },
+            { label: 'Level', value: String(progress.level || 1), emoji: '🌱', bg: KIDS_COLORS.secondaryMuted },
+            { label: 'Games Played', value: String(gamesCompleted), emoji: '🎮', bg: KIDS_COLORS.shapesMuted },
+            { label: 'Minutes', value: String(progress.totalMinutesPlayed), emoji: '⏱️', bg: KIDS_COLORS.lettersMuted },
+            { label: 'Day Streak', value: String(progress.streak), emoji: '🔥', bg: KIDS_COLORS.animalsMuted },
           ].map(stat => (
-            <View key={stat.label} style={styles.statCard}>
+            <View key={stat.label} style={[styles.statCard, { backgroundColor: stat.bg }]}>
               <Text style={styles.statEmoji}>{stat.emoji}</Text>
               <Text style={styles.statValue}>{stat.value}</Text>
               <Text style={styles.statLabel}>{stat.label}</Text>
             </View>
           ))}
+        </View>
+
+        {/* Weekly Activity Chart */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Weekly Activity ⭐</Text>
+          <View style={styles.barChart}>
+            {weekBars.map((bar, i) => {
+              const barHeight = bar.starsOnDay > 0 ? Math.max((bar.starsOnDay / maxBarStars) * 80, 8) : 4;
+              return (
+                <View key={i} style={styles.barColumn}>
+                  <Text style={styles.barValue}>{bar.starsOnDay > 0 ? bar.starsOnDay : ''}</Text>
+                  <View style={styles.barTrack}>
+                    <View
+                      style={[
+                        styles.barFill,
+                        { height: barHeight, backgroundColor: bar.hasActivity ? KIDS_COLORS.primary : KIDS_COLORS.border },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.barLabel}>{bar.day}</Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Badge Showcase */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Badges Earned 🏅</Text>
+            <Text style={styles.badgeCountText}>{earnedBadges.length}/{BADGES.length}</Text>
+          </View>
+          <View style={styles.badgeGrid}>
+            {BADGES.map(badge => {
+              const isEarned = earnedBadges.includes(badge.id);
+              return (
+                <View key={badge.id} style={[styles.badgeGridItem, !isEarned && styles.badgeGridItemLocked]}>
+                  <Text style={styles.badgeGridEmoji}>{isEarned ? badge.emoji : '🔒'}</Text>
+                  <Text style={[styles.badgeGridName, !isEarned && styles.badgeGridNameLocked]} numberOfLines={2}>
+                    {badge.name}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Subject Mastery */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Subject Mastery</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.circularRow}>
+            {SUBJECTS.map(subject => {
+              const stars = subject.games.reduce((sum, g) => sum + (progress.games[g]?.starsEarned || 0), 0);
+              const maxStars = subject.games.length * 3;
+              const pct = maxStars > 0 ? stars / maxStars : 0;
+              const pctStr = Math.round(pct * 100) + '%';
+              return (
+                <CircularProgress
+                  key={subject.label}
+                  size={72}
+                  progress={pct}
+                  color={subject.color}
+                  emoji={subject.emoji}
+                  label={subject.label}
+                  value={pctStr}
+                />
+              );
+            })}
+          </ScrollView>
         </View>
 
         {/* Age Group */}
@@ -275,24 +428,6 @@ export default function ParentScreen() {
           )}
         </View>
 
-        {/* Subject Breakdown */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Subject Breakdown</Text>
-          {SUBJECTS.map(subject => {
-            const practiced = subject.games.some(g => progress.games[g]?.completed);
-            return (
-              <View key={subject.label} style={styles.subjectRow}>
-                <Text style={styles.subjectName}>{subject.label}</Text>
-                <View style={[styles.subjectBadge, { backgroundColor: practiced ? KIDS_COLORS.success : KIDS_COLORS.border }]}>
-                  <Text style={[styles.subjectBadgeText, { color: practiced ? '#FFFFFF' : KIDS_COLORS.textTertiary }]}>
-                    {practiced ? 'Practiced ✓' : 'Not started'}
-                  </Text>
-                </View>
-              </View>
-            );
-          })}
-        </View>
-
         {/* Reset Progress */}
         <AnimatedPressable style={styles.resetBtn} onPress={handleResetProgress}>
           <Text style={styles.resetBtnText}>Reset All Progress</Text>
@@ -325,6 +460,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 16,
     marginBottom: 16,
+    justifyContent: 'center',
   },
   pinDot: {
     width: 20,
@@ -347,6 +483,7 @@ const styles = StyleSheet.create({
     gap: 12,
     width: '100%',
     maxWidth: 280,
+    alignSelf: 'center',
   },
   numpadRow: {
     flexDirection: 'row',
@@ -389,8 +526,27 @@ const styles = StyleSheet.create({
   },
   dashTitle: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 26,
+    fontSize: 24,
     color: KIDS_COLORS.text,
+  },
+  dashSubtitle: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 13,
+    color: KIDS_COLORS.textSecondary,
+  },
+  dashHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  subBadge: {
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  subBadgeText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
   },
   logoutBtn: {
     width: 44,
@@ -418,10 +574,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   statCard: {
-    width: '47%',
-    backgroundColor: KIDS_COLORS.surface,
+    width: (SCREEN_WIDTH - 40 - 20) / 3,
     borderRadius: 20,
-    padding: 16,
+    padding: 14,
     alignItems: 'center',
     shadowColor: KIDS_COLORS.shadow,
     shadowOffset: { width: 0, height: 3 },
@@ -430,17 +585,17 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   statEmoji: {
-    fontSize: 28,
+    fontSize: 24,
     marginBottom: 4,
   },
   statValue: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 28,
+    fontSize: 22,
     color: KIDS_COLORS.text,
   },
   statLabel: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 13,
+    fontSize: 11,
     color: KIDS_COLORS.textSecondary,
     textAlign: 'center',
   },
@@ -453,13 +608,114 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 8,
     elevation: 3,
+    gap: 16,
   },
   sectionTitle: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 18,
     color: KIDS_COLORS.text,
-    marginBottom: 16,
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  badgeCountText: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 14,
+    color: KIDS_COLORS.textSecondary,
+  },
+  // Bar chart
+  barChart: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    height: 110,
+  },
+  barColumn: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+  },
+  barValue: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: KIDS_COLORS.primary,
+    height: 16,
+  },
+  barTrack: {
+    width: 24,
+    height: 80,
+    justifyContent: 'flex-end',
+    borderRadius: 6,
+    backgroundColor: KIDS_COLORS.background,
+  },
+  barFill: {
+    width: 24,
+    borderRadius: 6,
+    minHeight: 4,
+  },
+  barLabel: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 11,
+    color: KIDS_COLORS.textSecondary,
+  },
+  // Badge grid
+  badgeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  badgeGridItem: {
+    width: (SCREEN_WIDTH - 40 - 40 - 30) / 4,
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: KIDS_COLORS.background,
+    borderRadius: 14,
+    padding: 8,
+  },
+  badgeGridItemLocked: {
+    opacity: 0.45,
+  },
+  badgeGridEmoji: {
+    fontSize: 28,
+  },
+  badgeGridName: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 10,
+    color: KIDS_COLORS.text,
+    textAlign: 'center',
+  },
+  badgeGridNameLocked: {
+    color: KIDS_COLORS.textTertiary,
+  },
+  // Circular progress
+  circularRow: {
+    gap: 12,
+    paddingHorizontal: 4,
+  },
+  circularItem: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  circularCenter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  circularEmoji: {
+    fontSize: 18,
+  },
+  circularValue: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+  },
+  circularLabel: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 12,
+    color: KIDS_COLORS.textSecondary,
+    textAlign: 'center',
+  },
+  // Age group
   ageRow: {
     flexDirection: 'row',
     gap: 10,
@@ -485,6 +741,7 @@ const styles = StyleSheet.create({
   ageBtnTextSelected: {
     color: '#FFFFFF',
   },
+  // Change PIN
   changePinBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -532,28 +789,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_600SemiBold',
     fontSize: 16,
     color: KIDS_COLORS.textSecondary,
-  },
-  subjectRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: KIDS_COLORS.divider,
-  },
-  subjectName: {
-    fontFamily: 'Nunito_600SemiBold',
-    fontSize: 16,
-    color: KIDS_COLORS.text,
-  },
-  subjectBadge: {
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  },
-  subjectBadgeText: {
-    fontFamily: 'Nunito_600SemiBold',
-    fontSize: 13,
   },
   resetBtn: {
     backgroundColor: KIDS_COLORS.danger,

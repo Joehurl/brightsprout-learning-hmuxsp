@@ -16,6 +16,7 @@ import { useProgress } from '@/contexts/ProgressContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { GameCompleteOverlay } from '@/components/GameCompleteOverlay';
 import { Mascot } from '@/components/Mascot';
+import { playSound } from '@/utils/sounds';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -84,6 +85,7 @@ export default function AlphabetAdventureScreen() {
     setCurrentIndex(index);
     setVisited(prev => new Set([...prev, index]));
     animateLetter();
+    playSound('tap');
     scrollRef.current?.scrollTo({ x: index * 40, animated: true });
   }, [animateLetter]);
 
@@ -125,6 +127,7 @@ export default function AlphabetAdventureScreen() {
 
   const handleGameComplete = async () => {
     console.log('[AlphabetAdventure] Game complete!');
+    playSound('correct');
     await completeGame('alphabet-adventure', 3);
     setShowComplete(true);
   };

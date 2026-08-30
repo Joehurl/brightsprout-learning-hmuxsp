@@ -10,6 +10,7 @@ import {
 import { KIDS_COLORS } from '@/constants/Colors';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { Confetti } from '@/components/Confetti';
+import { playSound } from '@/utils/sounds';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -32,6 +33,7 @@ export function GameCompleteOverlay({ visible, stars, message, onPlayAgain, onGo
   useEffect(() => {
     if (visible) {
       console.log('[GameCompleteOverlay] showing overlay, stars:', stars);
+      playSound('complete');
       slideAnim.setValue(SCREEN_HEIGHT);
       star1.setValue(0);
       star2.setValue(0);
@@ -50,7 +52,16 @@ export function GameCompleteOverlay({ visible, stars, message, onPlayAgain, onGo
         Animated.spring(star2, { toValue: 1, useNativeDriver: true, damping: 8, stiffness: 200 }),
         Animated.delay(150),
         Animated.spring(star3, { toValue: 1, useNativeDriver: true, damping: 8, stiffness: 200 }),
-      ]).start();
+      ]).start(() => {
+        // Play star sounds staggered after animation
+        const starCount = Math.min(stars, 3);
+        for (let i = 0; i < starCount; i++) {
+          setTimeout(() => {
+            console.log('[GameCompleteOverlay] star sound', i + 1);
+            playSound('star');
+          }, i * 180);
+        }
+      });
     }
   }, [visible]);
 

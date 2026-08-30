@@ -12,6 +12,7 @@ import { KIDS_COLORS } from '@/constants/Colors';
 import { useProgress } from '@/contexts/ProgressContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { GameCompleteOverlay } from '@/components/GameCompleteOverlay';
+import { playSound } from '@/utils/sounds';
 
 const PALETTE = [
   { name: 'Red', hex: '#FF4444' },
@@ -56,6 +57,7 @@ export default function ColorPaintScreen() {
 
   const handleSelectColor = (color: { name: string; hex: string }) => {
     console.log('[ColorPaint] Color selected:', color.name);
+    playSound('pop');
 
     // Check for mix hint
     if (lastSelected) {

@@ -25,11 +25,15 @@ const GAMES: Record<string, GameDef> = {
   'letter-trace': { name: 'Letter Tracing', desc: 'Trace letters with your finger', emoji: '✏️', minAge: 3 },
   'letter-match': { name: 'Letter Match', desc: 'Match uppercase to lowercase', emoji: '🔤', minAge: 4 },
   'phonics': { name: 'Phonics Fun', desc: 'Tap the letter that makes the sound', emoji: '🔊', minAge: 4 },
+  'spelling-bee': { name: 'Spelling Bee', desc: 'Spell words by tapping letters', emoji: '🐝', minAge: 5 },
   'counting': { name: 'Counting Stars', desc: 'Count the objects on screen', emoji: '⭐', minAge: 2 },
   'number-quiz': { name: 'Number Quiz', desc: 'Pick the right number', emoji: '🔢', minAge: 3 },
   'addition': { name: 'Adding Up', desc: 'Add colorful objects together', emoji: '➕', minAge: 6 },
   'shape-sorter': { name: 'Shape Sorter', desc: 'Drop shapes into the right holes', emoji: '🔷', minAge: 2 },
+  'memory-match': { name: 'Memory Match', desc: 'Find matching pairs of cards', emoji: '🧠', minAge: 3 },
+  'jigsaw-puzzle': { name: 'Jigsaw Puzzle', desc: 'Drag pieces to complete the puzzle', emoji: '🧩', minAge: 2 },
   'color-paint': { name: 'Color Mixing', desc: 'Mix colors to paint a scene', emoji: '🎨', minAge: 2 },
+  'drawing-canvas': { name: 'Drawing Canvas', desc: 'Draw anything you imagine!', emoji: '✏️', minAge: 2 },
   'animal-sounds': { name: 'Animal Sounds', desc: 'Guess the animal by its sound', emoji: '🦁', minAge: 2 },
 };
 
@@ -42,10 +46,10 @@ interface Category {
 }
 
 const CATEGORIES: Record<string, Category> = {
-  letters: { label: 'Letters', emoji: '🔤', color: KIDS_COLORS.letters, bg: KIDS_COLORS.lettersMuted, games: ['alphabet-adventure', 'letter-trace', 'letter-match', 'phonics'] },
+  letters: { label: 'Letters', emoji: '🔤', color: KIDS_COLORS.letters, bg: KIDS_COLORS.lettersMuted, games: ['alphabet-adventure', 'letter-trace', 'letter-match', 'phonics', 'spelling-bee'] },
   numbers: { label: 'Numbers', emoji: '🔢', color: KIDS_COLORS.numbers, bg: KIDS_COLORS.numbersMuted, games: ['counting', 'number-quiz', 'addition'] },
-  shapes: { label: 'Shapes', emoji: '🔷', color: KIDS_COLORS.shapes, bg: KIDS_COLORS.shapesMuted, games: ['shape-sorter'] },
-  colors: { label: 'Colors', emoji: '🎨', color: KIDS_COLORS.colors, bg: KIDS_COLORS.colorsMuted, games: ['color-paint'] },
+  shapes: { label: 'Shapes', emoji: '🔷', color: KIDS_COLORS.shapes, bg: KIDS_COLORS.shapesMuted, games: ['shape-sorter', 'memory-match', 'jigsaw-puzzle'] },
+  colors: { label: 'Colors', emoji: '🎨', color: KIDS_COLORS.colors, bg: KIDS_COLORS.colorsMuted, games: ['color-paint', 'drawing-canvas'] },
   animals: { label: 'Animals', emoji: '🦁', color: KIDS_COLORS.animals, bg: KIDS_COLORS.animalsMuted, games: ['animal-sounds'] },
   music: { label: 'Music', emoji: '🎵', color: KIDS_COLORS.music, bg: KIDS_COLORS.musicMuted, games: ['alphabet-adventure'] },
 };
@@ -53,7 +57,7 @@ const CATEGORIES: Record<string, Category> = {
 const AGE_MAP: Record<string, number> = { '2-4': 2, '5-6': 5, '7-8': 7 };
 
 // Free games — one per category, playable without premium
-const FREE_GAMES = new Set(['alphabet-adventure', 'counting', 'shape-sorter', 'color-paint', 'animal-sounds']);
+const FREE_GAMES = new Set(['alphabet-adventure', 'counting', 'shape-sorter', 'color-paint', 'animal-sounds', 'jigsaw-puzzle', 'drawing-canvas']);
 
 function StarRating({ stars }: { stars: number }) {
   return (

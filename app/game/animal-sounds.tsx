@@ -12,6 +12,7 @@ import { KIDS_COLORS } from '@/constants/Colors';
 import { useProgress } from '@/contexts/ProgressContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { GameCompleteOverlay } from '@/components/GameCompleteOverlay';
+import { playSound } from '@/utils/sounds';
 
 interface AnimalChoice {
   emoji: string;
@@ -69,8 +70,10 @@ export default function AnimalSoundsScreen() {
     if (answered) return;
     const isCorrect = choice.name === question.correct.name;
     console.log('[AnimalSounds] Answer selected:', choice.name, 'correct:', isCorrect);
+    playSound('tap');
     setAnswered(true);
     setSelectedChoice(choice.name);
+    playSound(isCorrect ? 'correct' : 'wrong');
 
     const newScore = isCorrect ? score + 1 : score;
     if (isCorrect) setScore(newScore);

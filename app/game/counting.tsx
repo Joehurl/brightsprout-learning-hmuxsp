@@ -12,6 +12,7 @@ import { KIDS_COLORS } from '@/constants/Colors';
 import { useProgress } from '@/contexts/ProgressContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { GameCompleteOverlay } from '@/components/GameCompleteOverlay';
+import { playSound } from '@/utils/sounds';
 
 const COUNTING_ROUNDS = [
   { count: 3, emoji: '⭐' }, { count: 5, emoji: '🍎' }, { count: 2, emoji: '🐱' },
@@ -59,6 +60,7 @@ export default function CountingScreen() {
   const handleTapObject = (i: number) => {
     if (tapped.has(i)) return;
     console.log('[Counting] Object tapped:', i);
+    playSound('tap');
     setTapped(prev => new Set([...prev, i]));
     Animated.sequence([
       Animated.spring(tapAnims[i], { toValue: 1.3, useNativeDriver: true, speed: 50 }),
@@ -71,6 +73,7 @@ export default function CountingScreen() {
     const isCorrect = choice === round.count;
     console.log('[Counting] Answer selected:', choice, 'correct:', isCorrect);
     setAnswered(true);
+    playSound(isCorrect ? 'correct' : 'wrong');
 
     const newScore = isCorrect ? score + 1 : score;
     if (isCorrect) setScore(newScore);

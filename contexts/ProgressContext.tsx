@@ -4,13 +4,13 @@ import { AppProgress, defaultProgress, loadProgress, recordGameComplete } from '
 interface ProgressContextType {
   progress: AppProgress;
   refreshProgress: () => Promise<void>;
-  completeGame: (gameId: string, stars: number) => Promise<void>;
+  completeGame: (gameId: string, stars: number) => Promise<{ newBadges: string[] }>;
 }
 
 const ProgressContext = createContext<ProgressContextType>({
   progress: defaultProgress,
   refreshProgress: async () => {},
-  completeGame: async () => {},
+  completeGame: async () => ({ newBadges: [] }),
 });
 
 export function ProgressProvider({ children }: { children: React.ReactNode }) {
@@ -22,10 +22,14 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     setProgress(p);
   }, []);
 
-  const completeGame = useCallback(async (gameId: string, stars: number) => {
+  const completeGame = useCallback(async (gameId: string, stars: number): Promise<{ newBadges: string[] }> => {
     console.log('[ProgressContext] completeGame called', { gameId, stars });
-    const updated = await recordGameComplete(gameId, stars);
+    const { progress: updated, newBadges } = await recordGameComplete(gameId, stars);
     setProgress(updated);
+    if (newBadges.length > 0) {
+      console.log('[ProgressContext] New badges earned:', newBadges);
+    }
+    return { newBadges };
   }, []);
 
   useEffect(() => { refreshProgress(); }, []);
