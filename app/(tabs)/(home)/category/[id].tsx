@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { KIDS_COLORS } from '@/constants/Colors';
 import { useProgress } from '@/contexts/ProgressContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 
 interface GameDef {
@@ -51,6 +52,9 @@ const CATEGORIES: Record<string, Category> = {
 
 const AGE_MAP: Record<string, number> = { '2-4': 2, '5-6': 5, '7-8': 7 };
 
+// Free games — one per category, playable without premium
+const FREE_GAMES = new Set(['alphabet-adventure', 'counting', 'shape-sorter', 'color-paint', 'animal-sounds']);
+
 function StarRating({ stars }: { stars: number }) {
   return (
     <View style={styles.starRow}>
@@ -68,6 +72,7 @@ export default function CategoryScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { progress } = useProgress();
+  const { isSubscribed } = useSubscription();
 
   const category = CATEGORIES[id as string];
   if (!category) return null;
@@ -84,9 +89,14 @@ export default function CategoryScreen() {
     router.back();
   };
 
-  const handlePlayGame = (gameId: string) => {
-    console.log('[CategoryScreen] Play game pressed:', gameId);
-    router.push(`/game/${gameId}` as any);
+  const handlePlayGame = (gameId: string, isLocked: boolean) => {
+    if (isLocked) {
+      console.log('[CategoryScreen] Locked game tapped — opening paywall:', gameId);
+      router.push('/paywall' as any);
+    } else {
+      console.log('[CategoryScreen] Play game pressed:', gameId);
+      router.push(`/game/${gameId}` as any);
+    }
   };
 
   return (
@@ -117,22 +127,32 @@ export default function CategoryScreen() {
             if (!game) return null;
             const gameProgress = progress.games[gameId];
             const stars = gameProgress ? gameProgress.starsEarned : 0;
+            const isFree = FREE_GAMES.has(gameId);
+            const isLocked = !isSubscribed && !isFree;
 
             return (
-              <View key={gameId} style={styles.gameCard}>
+              <View key={gameId} style={[styles.gameCard, isLocked && styles.gameCardLocked]}>
                 <View style={styles.gameCardLeft}>
-                  <Text style={styles.gameEmoji}>{game.emoji}</Text>
+                  <Text style={[styles.gameEmoji, isLocked && styles.lockedEmoji]}>
+                    {isLocked ? '🔒' : game.emoji}
+                  </Text>
                   <View style={styles.gameInfo}>
-                    <Text style={styles.gameName}>{game.name}</Text>
+                    <Text style={[styles.gameName, isLocked && styles.lockedText]}>{game.name}</Text>
                     <Text style={styles.gameDesc}>{game.desc}</Text>
-                    <StarRating stars={stars} />
+                    {!isLocked && <StarRating stars={stars} />}
+                    {isLocked && (
+                      <Text style={styles.premiumTag}>⭐ Premium</Text>
+                    )}
                   </View>
                 </View>
                 <AnimatedPressable
-                  style={[styles.playBtn, { backgroundColor: category.color }]}
-                  onPress={() => handlePlayGame(gameId)}
+                  style={[
+                    styles.playBtn,
+                    { backgroundColor: isLocked ? KIDS_COLORS.textSecondary : category.color },
+                  ]}
+                  onPress={() => handlePlayGame(gameId, isLocked)}
                 >
-                  <Text style={styles.playBtnText}>Play</Text>
+                  <Text style={styles.playBtnText}>{isLocked ? '🔒' : 'Play'}</Text>
                 </AnimatedPressable>
               </View>
             );
@@ -196,6 +216,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  gameCardLocked: {
+    opacity: 0.75,
+  },
   gameCardLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -204,6 +227,9 @@ const styles = StyleSheet.create({
   },
   gameEmoji: {
     fontSize: 36,
+  },
+  lockedEmoji: {
+    fontSize: 32,
   },
   gameInfo: {
     flex: 1,
@@ -214,11 +240,19 @@ const styles = StyleSheet.create({
     color: KIDS_COLORS.text,
     marginBottom: 2,
   },
+  lockedText: {
+    color: KIDS_COLORS.textSecondary,
+  },
   gameDesc: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
     color: KIDS_COLORS.textSecondary,
     marginBottom: 6,
+  },
+  premiumTag: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 12,
+    color: KIDS_COLORS.primary,
   },
   starRow: {
     flexDirection: 'row',

@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KIDS_COLORS } from '@/constants/Colors';
 import { useProgress } from '@/contexts/ProgressContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -38,6 +39,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { progress } = useProgress();
+  const { isSubscribed } = useSubscription();
 
   // Mascot bounce animation
   const bounceAnim = useRef(new Animated.Value(0)).current;
@@ -67,6 +69,11 @@ export default function HomeScreen() {
     router.push(`/(tabs)/(home)/category/${categoryId}` as any);
   };
 
+  const handlePremiumBannerPress = () => {
+    console.log('[HomeScreen] Premium banner pressed — opening paywall');
+    router.push('/paywall' as any);
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView
@@ -84,6 +91,18 @@ export default function HomeScreen() {
             <Text style={styles.subtitle}>Ready to learn?</Text>
           </View>
         </View>
+
+        {/* Premium Banner — only shown to non-subscribers */}
+        {!isSubscribed && (
+          <AnimatedPressable style={styles.premiumBanner} onPress={handlePremiumBannerPress}>
+            <Text style={styles.premiumBannerEmoji}>⭐</Text>
+            <View style={styles.premiumBannerText}>
+              <Text style={styles.premiumBannerTitle}>Go Premium</Text>
+              <Text style={styles.premiumBannerSub}>Unlock all 10 games — $2.99/month</Text>
+            </View>
+            <Text style={styles.premiumBannerArrow}>›</Text>
+          </AnimatedPressable>
+        )}
 
         <Text style={styles.mainTitle}>Let's Play & Learn!</Text>
 
@@ -164,6 +183,42 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: KIDS_COLORS.textSecondary,
   },
+
+  // Premium banner
+  premiumBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: KIDS_COLORS.primaryMuted,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    borderWidth: 1.5,
+    borderColor: KIDS_COLORS.primary,
+    gap: 12,
+  },
+  premiumBannerEmoji: {
+    fontSize: 28,
+  },
+  premiumBannerText: {
+    flex: 1,
+  },
+  premiumBannerTitle: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 16,
+    color: KIDS_COLORS.primary,
+  },
+  premiumBannerSub: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: KIDS_COLORS.textSecondary,
+  },
+  premiumBannerArrow: {
+    fontSize: 24,
+    color: KIDS_COLORS.primary,
+    fontFamily: 'Nunito_700Bold',
+  },
+
   mainTitle: {
     fontFamily: 'Nunito_800ExtraBold',
     fontSize: 32,

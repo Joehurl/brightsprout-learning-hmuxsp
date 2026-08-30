@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { Slot } from 'expo-router';
 import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
+import { useSubscriptionGuard } from "@/hooks/useSubscriptionGuard";
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -12,6 +13,8 @@ const TABS: TabBarItem[] = [
 ];
 
 export default function TabLayout() {
+  useSubscriptionGuard();
+
   return (
     <View style={styles.container}>
       <Slot />

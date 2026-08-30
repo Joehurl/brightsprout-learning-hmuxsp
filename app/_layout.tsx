@@ -1,7 +1,7 @@
 import "react-native-reanimated";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { Stack, Redirect, usePathname, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -17,7 +17,9 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { ProgressProvider } from "@/contexts/ProgressContext";
+import { SubscriptionProvider, useSubscription } from "@/contexts/SubscriptionContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { isOnboardingComplete } from "@/utils/onboardingStorage";
 import {
   Nunito_400Regular,
   Nunito_600SemiBold,
@@ -37,9 +39,45 @@ export const unstable_settings = {
   initialRouteName: "(tabs)",
 };
 
-export default function RootLayout() {
+function SubscriptionRedirect() {
+  const { isSubscribed, loading } = useSubscription();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (loading) return;
+    const onOnboarding = pathname.startsWith("/onboarding");
+    if (onOnboarding) return;
+
+    let cancelled = false;
+    isOnboardingComplete().then((done) => {
+      if (cancelled) return;
+      if (!done) return;
+      const onPaywall = pathname === "/paywall";
+      if (onPaywall) return;
+      if (!isSubscribed) {
+        router.replace("/paywall");
+      }
+    }).catch(() => {
+      if (cancelled) return;
+      const onPaywall = pathname === "/paywall";
+      if (onPaywall) return;
+      if (!isSubscribed) {
+        router.replace("/paywall");
+      }
+    });
+    return () => { cancelled = true; };
+  }, [isSubscribed, loading, pathname]);
+
+  return null;
+}
+
+function RootLayoutInner() {
   const colorScheme = useColorScheme();
   const networkState = useNetworkState();
+  const pathname = usePathname();
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
+
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
     Nunito_400Regular,
@@ -54,7 +92,13 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    isOnboardingComplete().then((complete) => {
+      setOnboardingComplete(complete);
+    });
+  }, [pathname]);
+
+  useEffect(() => {
     if (
       !networkState.isConnected &&
       networkState.isInternetReachable === false
@@ -65,6 +109,10 @@ export default function RootLayout() {
       );
     }
   }, [networkState.isConnected, networkState.isInternetReachable]);
+
+  if (onboardingComplete === null) {
+    return null;
+  }
 
   const CustomDefaultTheme: Theme = {
     ...DefaultTheme,
@@ -93,6 +141,7 @@ export default function RootLayout() {
 
   return (
     <DevErrorBoundary>
+      <SubscriptionRedirect />
       <StatusBar style="auto" animated />
       <ThemeProvider
         value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}
@@ -101,7 +150,11 @@ export default function RootLayout() {
           <WidgetProvider>
             <ProgressProvider>
               <GestureHandlerRootView>
+                {onboardingComplete === false && pathname !== "/auth" && pathname !== "/paywall" && pathname !== "/auth-popup" && pathname !== "/auth-callback" && <Redirect href="/onboarding" />}
+
                 <Stack>
+                  <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+                  <Stack.Screen name="paywall" options={{ presentation: "modal", headerShown: false }} />
                   <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                   <Stack.Screen name="game/alphabet-adventure" options={{ headerShown: false }} />
                   <Stack.Screen name="game/letter-trace" options={{ headerShown: false }} />
@@ -121,5 +174,13 @@ export default function RootLayout() {
         </SafeAreaProvider>
       </ThemeProvider>
     </DevErrorBoundary>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <SubscriptionProvider>
+      <RootLayoutInner />
+    </SubscriptionProvider>
   );
 }
