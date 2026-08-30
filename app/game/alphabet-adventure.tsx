@@ -15,6 +15,7 @@ import { KIDS_COLORS } from '@/constants/Colors';
 import { useProgress } from '@/contexts/ProgressContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { GameCompleteOverlay } from '@/components/GameCompleteOverlay';
+import { Mascot } from '@/components/Mascot';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -157,6 +158,7 @@ export default function AlphabetAdventureScreen() {
             <ChevronLeft size={28} color="#FFFFFF" />
           </AnimatedPressable>
           <Text style={styles.title}>Alphabet Adventure 🎵</Text>
+          <Mascot size={60} animate={false} expression="happy" />
         </View>
 
         {/* Letter Display */}

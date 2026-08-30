@@ -1,10 +1,9 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  Animated,
   Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -13,6 +12,7 @@ import { KIDS_COLORS } from '@/constants/Colors';
 import { useProgress } from '@/contexts/ProgressContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
+import { Mascot } from '@/components/Mascot';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_SIZE = (SCREEN_WIDTH - 48 - 12) / 2;
@@ -41,19 +41,7 @@ export default function HomeScreen() {
   const { progress } = useProgress();
   const { isSubscribed } = useSubscription();
 
-  // Mascot bounce animation
-  const bounceAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.spring(bounceAnim, { toValue: -12, useNativeDriver: true, speed: 3, bounciness: 8 }),
-        Animated.spring(bounceAnim, { toValue: 0, useNativeDriver: true, speed: 3, bounciness: 8 }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, []);
 
   const getCategoryStars = (games: string[]) => {
     return games.reduce((sum, gameId) => {
@@ -83,9 +71,7 @@ export default function HomeScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Animated.View style={[styles.mascotCircle, { transform: [{ translateY: bounceAnim }] }]}>
-            <Text style={styles.mascotEmoji}>🌱</Text>
-          </Animated.View>
+          <Mascot size={100} animate={true} expression="happy" />
           <View style={styles.headerText}>
             <Text style={styles.greeting}>Hi there!</Text>
             <Text style={styles.subtitle}>Ready to learn?</Text>
@@ -154,22 +140,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 16,
   },
-  mascotCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: KIDS_COLORS.primaryMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: KIDS_COLORS.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  mascotEmoji: {
-    fontSize: 40,
-  },
+
   headerText: {
     flex: 1,
   },

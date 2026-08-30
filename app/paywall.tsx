@@ -23,6 +23,7 @@ import { PurchasesPackage } from "react-native-purchases";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { KIDS_COLORS } from "@/constants/Colors";
+import { Mascot } from "@/components/Mascot";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -92,20 +93,6 @@ export default function PaywallScreen() {
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [cancelExpanded, setCancelExpanded] = useState(false);
-
-  // Mascot bounce animation
-  const bounceAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.spring(bounceAnim, { toValue: -14, useNativeDriver: true, speed: 2, bounciness: 10 }),
-        Animated.spring(bounceAnim, { toValue: 0, useNativeDriver: true, speed: 2, bounciness: 10 }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, []);
 
   useEffect(() => {
     if (packages.length > 0 && !selectedPackage) {
@@ -258,9 +245,7 @@ export default function PaywallScreen() {
 
               {/* Mascot */}
               <View style={styles.heroCenter}>
-                <Animated.View style={[styles.mascotCircle, { transform: [{ translateY: bounceAnim }] }]}>
-                  <Text style={styles.mascotEmoji}>🌱</Text>
-                </Animated.View>
+                <Mascot size={110} animate={true} expression="excited" />
                 <Text style={styles.heroTitle}>BrightSprout</Text>
                 <Text style={styles.heroSubtitle}>Premium Learning</Text>
               </View>
@@ -427,23 +412,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     zIndex: 5,
   },
-  mascotCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  mascotEmoji: {
-    fontSize: 56,
-  },
+
   heroTitle: {
     fontFamily: "Nunito_800ExtraBold",
     fontSize: 32,
