@@ -32,7 +32,6 @@ const CATEGORIES: Category[] = [
   { id: 'shapes', label: 'Shapes', emoji: '🔷', color: KIDS_COLORS.shapes, bg: KIDS_COLORS.shapesMuted, games: ['shape-sorter', 'memory-match', 'jigsaw-puzzle'] },
   { id: 'colors', label: 'Colors', emoji: '🎨', color: KIDS_COLORS.colors, bg: KIDS_COLORS.colorsMuted, games: ['color-paint', 'drawing-canvas'] },
   { id: 'animals', label: 'Animals', emoji: '🦁', color: KIDS_COLORS.animals, bg: KIDS_COLORS.animalsMuted, games: ['animal-sounds'] },
-  { id: 'music', label: 'Music', emoji: '🎵', color: KIDS_COLORS.music, bg: KIDS_COLORS.musicMuted, games: ['alphabet-adventure'] },
 ];
 
 export default function HomeScreen() {

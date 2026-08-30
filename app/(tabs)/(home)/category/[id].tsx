@@ -51,10 +51,9 @@ const CATEGORIES: Record<string, Category> = {
   shapes: { label: 'Shapes', emoji: '🔷', color: KIDS_COLORS.shapes, bg: KIDS_COLORS.shapesMuted, games: ['shape-sorter', 'memory-match', 'jigsaw-puzzle'] },
   colors: { label: 'Colors', emoji: '🎨', color: KIDS_COLORS.colors, bg: KIDS_COLORS.colorsMuted, games: ['color-paint', 'drawing-canvas'] },
   animals: { label: 'Animals', emoji: '🦁', color: KIDS_COLORS.animals, bg: KIDS_COLORS.animalsMuted, games: ['animal-sounds'] },
-  music: { label: 'Music', emoji: '🎵', color: KIDS_COLORS.music, bg: KIDS_COLORS.musicMuted, games: ['alphabet-adventure'] },
 };
 
-const AGE_MAP: Record<string, number> = { '2-4': 2, '5-6': 5, '7-8': 7 };
+const AGE_MAP: Record<string, number> = { '2-4': 4, '5-6': 6, '7-8': 8 };
 
 // Free games — playable without purchase (5 free preview games)
 const FREE_GAMES = new Set(['alphabet-adventure', 'counting', 'shape-sorter', 'color-paint', 'animal-sounds']);
@@ -81,11 +80,11 @@ export default function CategoryScreen() {
   const category = CATEGORIES[id as string];
   if (!category) return null;
 
-  const minAge = AGE_MAP[progress.ageGroup] ?? 2;
+  const maxAge = AGE_MAP[progress.ageGroup] ?? 4;
 
   const filteredGames = category.games.filter(gameId => {
     const game = GAMES[gameId];
-    return game && game.minAge <= minAge;
+    return game && game.minAge <= maxAge;
   });
 
   const handleBack = () => {

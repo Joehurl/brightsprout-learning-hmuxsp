@@ -9,14 +9,27 @@
     "splash": {
       "image": "./assets/images/app-icon-okg.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF"
+      "backgroundColor": "#FFF9F0"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/app-icon-okg.png",
         "backgroundColor": "#FFFFFF"
       },
-      "package": "com.placeholder.app"
+      "package": "com.brightsprout.learning",
+      "versionCode": 1,
+      "softwareKeyboardLayoutMode": "pan",
+      "permissions": [
+        "android.permission.VIBRATE"
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_CONTACTS",
+        "android.permission.WRITE_CONTACTS",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/images/newly.png",
@@ -33,7 +46,10 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {}
+      "router": {},
+      "eas": {
+        "projectId": ""
+      }
     }
   }
 }
