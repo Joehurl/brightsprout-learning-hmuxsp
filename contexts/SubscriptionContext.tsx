@@ -99,11 +99,11 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const fetchOfferingsViaRest = async () => {
     // Mock package with real prices from RevenueCat dashboard
     const mockPackage = {
-      identifier: "$rc_monthly",
+      identifier: "$rc_lifetime",
       product: {
-        title: "Premium",
-        priceString: "$4.99/month",
-        description: "Unlock all premium features",
+        title: "BrightSprout Lifetime",
+        priceString: "$4.99",
+        description: "Unlock all games forever",
       },
     };
 

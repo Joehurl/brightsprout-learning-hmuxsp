@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KIDS_COLORS } from '@/constants/Colors';
 import { useProgress } from '@/contexts/ProgressContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { Mascot } from '@/components/Mascot';
 
@@ -38,8 +39,12 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { progress } = useProgress();
+  const { isSubscribed } = useSubscription();
 
-
+  const handlePremiumBannerPress = () => {
+    console.log('[HomeScreen iOS] Unlock banner pressed — opening paywall');
+    router.push('/paywall' as any);
+  };
 
   const getCategoryStars = (games: string[]) => {
     return games.reduce((sum, gameId) => {
@@ -69,6 +74,18 @@ export default function HomeScreen() {
             <Text style={styles.subtitle}>Ready to learn?</Text>
           </View>
         </View>
+
+        {/* Unlock banner — only shown to users who haven't purchased */}
+        {!isSubscribed && (
+          <AnimatedPressable style={styles.premiumBanner} onPress={handlePremiumBannerPress}>
+            <Text style={styles.premiumBannerEmoji}>🔓</Text>
+            <View style={styles.premiumBannerText}>
+              <Text style={styles.premiumBannerTitle}>Unlock All Games</Text>
+              <Text style={styles.premiumBannerSub}>One-time $4.99 • Yours forever</Text>
+            </View>
+            <Text style={styles.premiumBannerArrow}>›</Text>
+          </AnimatedPressable>
+        )}
 
         <Text style={styles.mainTitle}>Let's Play & Learn!</Text>
 
@@ -131,6 +148,40 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_600SemiBold',
     fontSize: 16,
     color: KIDS_COLORS.textSecondary,
+  },
+  // Unlock banner
+  premiumBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: KIDS_COLORS.primaryMuted,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    borderWidth: 1.5,
+    borderColor: KIDS_COLORS.primary,
+    gap: 12,
+  },
+  premiumBannerEmoji: {
+    fontSize: 28,
+  },
+  premiumBannerText: {
+    flex: 1,
+  },
+  premiumBannerTitle: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 16,
+    color: KIDS_COLORS.primary,
+  },
+  premiumBannerSub: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: KIDS_COLORS.textSecondary,
+  },
+  premiumBannerArrow: {
+    fontSize: 24,
+    color: KIDS_COLORS.primary,
+    fontFamily: 'Nunito_700Bold',
   },
   mainTitle: {
     fontFamily: 'Nunito_800ExtraBold',

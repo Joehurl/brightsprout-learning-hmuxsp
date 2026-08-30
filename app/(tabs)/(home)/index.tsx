@@ -81,10 +81,10 @@ export default function HomeScreen() {
         {/* Premium Banner — only shown to non-subscribers */}
         {!isSubscribed && (
           <AnimatedPressable style={styles.premiumBanner} onPress={handlePremiumBannerPress}>
-            <Text style={styles.premiumBannerEmoji}>⭐</Text>
+            <Text style={styles.premiumBannerEmoji}>🔓</Text>
             <View style={styles.premiumBannerText}>
-              <Text style={styles.premiumBannerTitle}>Go Premium</Text>
-              <Text style={styles.premiumBannerSub}>Unlock all 10 games — $2.99/month</Text>
+              <Text style={styles.premiumBannerTitle}>Unlock All Games</Text>
+              <Text style={styles.premiumBannerSub}>One-time $4.99 • Yours forever</Text>
             </View>
             <Text style={styles.premiumBannerArrow}>›</Text>
           </AnimatedPressable>

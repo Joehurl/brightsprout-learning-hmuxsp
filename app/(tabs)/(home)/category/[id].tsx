@@ -56,8 +56,8 @@ const CATEGORIES: Record<string, Category> = {
 
 const AGE_MAP: Record<string, number> = { '2-4': 2, '5-6': 5, '7-8': 7 };
 
-// Free games — one per category, playable without premium
-const FREE_GAMES = new Set(['alphabet-adventure', 'counting', 'shape-sorter', 'color-paint', 'animal-sounds', 'jigsaw-puzzle', 'drawing-canvas']);
+// Free games — playable without purchase (5 free preview games)
+const FREE_GAMES = new Set(['alphabet-adventure', 'counting', 'shape-sorter', 'color-paint', 'animal-sounds']);
 
 function StarRating({ stars }: { stars: number }) {
   return (
@@ -145,7 +145,7 @@ export default function CategoryScreen() {
                     <Text style={styles.gameDesc}>{game.desc}</Text>
                     {!isLocked && <StarRating stars={stars} />}
                     {isLocked && (
-                      <Text style={styles.premiumTag}>⭐ Premium</Text>
+                      <Text style={styles.premiumTag}>🔓 Unlock — $4.99</Text>
                     )}
                   </View>
                 </View>
@@ -156,7 +156,7 @@ export default function CategoryScreen() {
                   ]}
                   onPress={() => handlePlayGame(gameId, isLocked)}
                 >
-                  <Text style={styles.playBtnText}>{isLocked ? '🔒' : 'Play'}</Text>
+                  <Text style={styles.playBtnText}>{isLocked ? 'Unlock' : 'Play'}</Text>
                 </AnimatedPressable>
               </View>
             );

@@ -1,6 +1,6 @@
 /**
  * BrightSprout Paywall Screen
- * Beautiful kids-themed paywall with animated hero section.
+ * One-time lifetime purchase — pay once, own forever.
  */
 
 import React, { useRef, useEffect, useState } from "react";
@@ -27,20 +27,26 @@ import { Mascot } from "@/components/Mascot";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-// Free games (one per category) — all others require premium
-const FREE_GAMES = ["alphabet-adventure", "counting", "shape-sorter", "color-paint", "animal-sounds"];
+// Free games — always playable without purchase
+const FREE_GAMES_LIST = [
+  "Alphabet Adventure",
+  "Counting Stars",
+  "Shape Sorter",
+  "Color Mixing",
+  "Animal Sounds",
+];
 
-const FEATURES = [
-  { emoji: "⭐", text: "10 Interactive Learning Games" },
-  { emoji: "🔤", text: "Letters, Numbers, Shapes & More" },
-  { emoji: "🏆", text: "Stars & Rewards System" },
-  { emoji: "📊", text: "Parent Progress Dashboard" },
-  { emoji: "🔄", text: "New Games Added Regularly" },
+// What unlocks with the one-time purchase
+const UNLOCK_FEATURES = [
+  { emoji: "🎮", text: "14 games total — all games" },
+  { emoji: "🏆", text: "Badges & rewards system" },
+  { emoji: "📊", text: "Parent progress dashboard" },
+  { emoji: "🔮", text: "All future games included" },
+  { emoji: "♾️", text: "One-time payment — yours forever" },
 ];
 
 const FLOATING_EMOJIS = ["🔤", "📚", "🔢", "🎨", "🦁", "🎵"];
 
-// Positions for the 6 floating emojis arranged in a circle around the mascot
 const FLOAT_POSITIONS = [
   { top: 20, left: SCREEN_WIDTH / 2 - 120 },
   { top: 20, left: SCREEN_WIDTH / 2 + 60 },
@@ -92,7 +98,6 @@ export default function PaywallScreen() {
   const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
-  const [cancelExpanded, setCancelExpanded] = useState(false);
 
   useEffect(() => {
     if (packages.length > 0 && !selectedPackage) {
@@ -101,20 +106,20 @@ export default function PaywallScreen() {
   }, [packages]);
 
   const handleClose = () => {
-    console.log("[Paywall] Close button pressed");
+    console.log("[Paywall] Close button pressed — returning to home (free preview)");
     router.replace("/(tabs)/(home)");
   };
 
   const handlePurchase = async () => {
     if (!selectedPackage) return;
-    console.log("[Paywall] Subscribe button pressed, package:", selectedPackage.identifier);
+    console.log("[Paywall] Unlock button pressed, package:", selectedPackage.identifier);
     try {
       setPurchasing(true);
       const success = await purchasePackage(selectedPackage);
       console.log("[Paywall] Purchase result:", success);
       if (success) {
-        Alert.alert("Welcome to BrightSprout Premium! 🌱", "All learning adventures are now unlocked!", [
-          { text: "Let's Go! 🚀", onPress: () => router.replace("/(tabs)/(home)") },
+        Alert.alert("You Own BrightSprout! 🎉", "All 14 games are now unlocked forever!", [
+          { text: "Start Learning 🚀", onPress: () => router.replace("/(tabs)/(home)") },
         ]);
       }
     } catch (error: any) {
@@ -126,17 +131,17 @@ export default function PaywallScreen() {
   };
 
   const handleRestore = async () => {
-    console.log("[Paywall] Restore purchases pressed");
+    console.log("[Paywall] Restore purchase pressed");
     try {
       setRestoring(true);
       const restored = await restorePurchases();
       console.log("[Paywall] Restore result:", restored);
       if (restored) {
-        Alert.alert("Restored! 🎉", "Your subscription has been restored.", [
-          { text: "OK", onPress: () => router.replace("/(tabs)/(home)") },
+        Alert.alert("Restored! 🎉", "Your purchase has been restored.", [
+          { text: "Start Learning 🚀", onPress: () => router.replace("/(tabs)/(home)") },
         ]);
       } else {
-        Alert.alert("No Purchases Found", "We couldn't find any previous purchases to restore.");
+        Alert.alert("No Purchase Found", "We couldn't find a previous purchase to restore.");
       }
     } catch (error: any) {
       console.log("[Paywall] Restore error:", error?.message);
@@ -152,12 +157,7 @@ export default function PaywallScreen() {
     router.replace("/(tabs)/(home)");
   };
 
-  const handleToggleCancel = () => {
-    console.log("[Paywall] Cancel info toggled");
-    setCancelExpanded((prev) => !prev);
-  };
-
-  // Already subscribed
+  // Already purchased / unlocked
   if (isSubscribed) {
     return (
       <View style={styles.container}>
@@ -171,10 +171,10 @@ export default function PaywallScreen() {
           <TouchableOpacity style={styles.closeBtn} onPress={handleClose}>
             <Text style={styles.closeBtnText}>✕</Text>
           </TouchableOpacity>
-          <View style={styles.subscribedContent}>
+          <View style={styles.ownedContent}>
             <Text style={styles.celebrationEmoji}>🎉</Text>
-            <Text style={styles.subscribedTitle}>You're Premium!</Text>
-            <Text style={styles.subscribedSubtitle}>All learning adventures are unlocked!</Text>
+            <Text style={styles.ownedTitle}>You Own BrightSprout!</Text>
+            <Text style={styles.ownedSubtitle}>All 14 games are unlocked forever!</Text>
             <AnimatedPressable style={styles.exploreBtn} onPress={handleClose}>
               <Text style={styles.exploreBtnText}>Start Learning 🚀</Text>
             </AnimatedPressable>
@@ -204,13 +204,9 @@ export default function PaywallScreen() {
     );
   }
 
-  // Derive price string for the CTA button
-  const priceString = selectedPackage?.product?.priceString ?? "$2.99";
-  const ctaLabel = purchasing ? "" : `Start Learning — ${priceString}/month`;
-
-  const cancelPlatformText = Platform.OS === "ios"
-    ? "On iPhone: Settings → Apple ID → Subscriptions → BrightSprout → Cancel."
-    : "On Android: Play Store → Subscriptions → BrightSprout → Cancel.";
+  const priceString = selectedPackage?.product?.priceString ?? "$4.99";
+  const ctaLabel = purchasing ? "" : `Unlock Everything — ${priceString}`;
+  const storeName = Platform.OS === "ios" ? "App Store" : "Google Play";
 
   return (
     <View style={styles.container}>
@@ -247,19 +243,32 @@ export default function PaywallScreen() {
               <View style={styles.heroCenter}>
                 <Mascot size={110} animate={true} expression="excited" />
                 <Text style={styles.heroTitle}>BrightSprout</Text>
-                <Text style={styles.heroSubtitle}>Premium Learning</Text>
+                <Text style={styles.heroSubtitle}>Own it forever 🌱</Text>
               </View>
             </LinearGradient>
           </View>
 
           {/* ── Content ── */}
           <View style={styles.content}>
-            {/* Headline */}
-            <Text style={styles.headline}>Unlock All Learning Adventures! 🚀</Text>
 
-            {/* Feature bullets */}
+            {/* Free preview card */}
+            <View style={styles.freePreviewCard}>
+              <Text style={styles.freePreviewTitle}>✅ Free Forever</Text>
+              <Text style={styles.freePreviewSubtitle}>5 games — no purchase needed</Text>
+              <View style={styles.freeGamesList}>
+                {FREE_GAMES_LIST.map((name, i) => (
+                  <View key={i} style={styles.freeGameRow}>
+                    <Text style={styles.freeGameBullet}>•</Text>
+                    <Text style={styles.freeGameName}>{name}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* Unlock everything section */}
+            <Text style={styles.unlockHeadline}>Unlock Everything 🔓</Text>
             <View style={styles.featureList}>
-              {FEATURES.map((f, i) => (
+              {UNLOCK_FEATURES.map((f, i) => (
                 <View key={i} style={styles.featureRow}>
                   <View style={styles.featureIconCircle}>
                     <Text style={styles.featureIconText}>{f.emoji}</Text>
@@ -269,21 +278,30 @@ export default function PaywallScreen() {
               ))}
             </View>
 
-            {/* Subscribe CTA */}
+            {/* Price badge */}
+            <View style={styles.priceBadgeWrapper}>
+              <View style={styles.priceBadge}>
+                <Text style={styles.priceBadgeAmount}>$4.99</Text>
+              </View>
+              <Text style={styles.priceTagline}>One-time purchase • No subscription • No recurring charges</Text>
+              <Text style={styles.priceOwnership}>Own BrightSprout forever — pay once, play always</Text>
+            </View>
+
+            {/* CTA button */}
             {isWeb ? (
-              <AnimatedPressable style={styles.subscribeBtn} onPress={handleWebMockPurchase}>
-                <Text style={styles.subscribeBtnText}>Start Learning — $2.99/month</Text>
+              <AnimatedPressable style={styles.unlockBtn} onPress={handleWebMockPurchase}>
+                <Text style={styles.unlockBtnText}>Unlock Everything — $4.99</Text>
               </AnimatedPressable>
             ) : (
               <AnimatedPressable
-                style={[styles.subscribeBtn, (purchasing || !selectedPackage) && styles.btnDisabled]}
+                style={[styles.unlockBtn, (purchasing || !selectedPackage) && styles.btnDisabled]}
                 onPress={handlePurchase}
                 disabled={purchasing || !selectedPackage}
               >
                 {purchasing ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={KIDS_COLORS.text} />
                 ) : (
-                  <Text style={styles.subscribeBtnText}>{ctaLabel}</Text>
+                  <Text style={styles.unlockBtnText}>{ctaLabel}</Text>
                 )}
               </AnimatedPressable>
             )}
@@ -309,38 +327,18 @@ export default function PaywallScreen() {
               </View>
             )}
 
-            {/* Cancel anytime note */}
-            <Text style={styles.cancelNote}>
-              Cancel anytime in {Platform.OS === "ios" ? "App Store" : "Play Store"} settings
-            </Text>
-
-            {/* Restore Purchases */}
+            {/* Restore Purchase */}
             <TouchableOpacity style={styles.restoreBtn} onPress={handleRestore} disabled={restoring}>
               {restoring ? (
                 <ActivityIndicator size="small" color={KIDS_COLORS.textSecondary} />
               ) : (
-                <Text style={styles.restoreBtnText}>Restore Purchases</Text>
-              )}
-            </TouchableOpacity>
-
-            {/* How to Cancel info card */}
-            <TouchableOpacity style={styles.cancelCard} onPress={handleToggleCancel} activeOpacity={0.8}>
-              <View style={styles.cancelCardHeader}>
-                <Text style={styles.cancelCardTitle}>Easy Cancellation 🔓</Text>
-                <Text style={styles.cancelCardChevron}>{cancelExpanded ? "▲" : "▼"}</Text>
-              </View>
-              {cancelExpanded && (
-                <Text style={styles.cancelCardBody}>
-                  {`Cancel anytime — no questions asked.\n\n${cancelPlatformText}`}
-                </Text>
+                <Text style={styles.restoreBtnText}>Restore Purchase</Text>
               )}
             </TouchableOpacity>
 
             {/* Legal */}
             <Text style={styles.legalText}>
-              {Platform.OS === "ios"
-                ? "Payment charged to Apple ID. Subscription renews unless cancelled 24h before period end."
-                : "Payment charged to Google Play account. Subscription renews unless cancelled 24h before period end."}
+              {`One-time purchase. Payment processed by ${storeName}. No recurring charges.`}
             </Text>
           </View>
         </ScrollView>
@@ -412,7 +410,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     zIndex: 5,
   },
-
   heroTitle: {
     fontFamily: "Nunito_800ExtraBold",
     fontSize: 32,
@@ -424,27 +421,65 @@ const styles = StyleSheet.create({
   heroSubtitle: {
     fontFamily: "Nunito_600SemiBold",
     fontSize: 16,
-    color: "rgba(255,255,255,0.85)",
+    color: "rgba(255,255,255,0.9)",
     marginTop: 4,
   },
 
   // ── Content ──
   content: {
     paddingHorizontal: 24,
-    paddingTop: 28,
-  },
-  headline: {
-    fontFamily: "Nunito_800ExtraBold",
-    fontSize: 26,
-    color: KIDS_COLORS.text,
-    textAlign: "center",
-    marginBottom: 24,
-    lineHeight: 34,
+    paddingTop: 24,
   },
 
-  // Feature list
+  // Free preview card
+  freePreviewCard: {
+    backgroundColor: KIDS_COLORS.secondaryMuted,
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 24,
+    borderWidth: 1.5,
+    borderColor: KIDS_COLORS.secondary,
+  },
+  freePreviewTitle: {
+    fontFamily: "Nunito_800ExtraBold",
+    fontSize: 17,
+    color: KIDS_COLORS.text,
+    marginBottom: 2,
+  },
+  freePreviewSubtitle: {
+    fontFamily: "Nunito_400Regular",
+    fontSize: 13,
+    color: KIDS_COLORS.textSecondary,
+    marginBottom: 12,
+  },
+  freeGamesList: {
+    gap: 4,
+  },
+  freeGameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  freeGameBullet: {
+    fontFamily: "Nunito_700Bold",
+    fontSize: 16,
+    color: KIDS_COLORS.secondary,
+  },
+  freeGameName: {
+    fontFamily: "Nunito_600SemiBold",
+    fontSize: 14,
+    color: KIDS_COLORS.text,
+  },
+
+  // Unlock section
+  unlockHeadline: {
+    fontFamily: "Nunito_800ExtraBold",
+    fontSize: 22,
+    color: KIDS_COLORS.text,
+    marginBottom: 16,
+  },
   featureList: {
-    gap: 14,
+    gap: 12,
     marginBottom: 28,
   },
   featureRow: {
@@ -470,8 +505,47 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Subscribe button
-  subscribeBtn: {
+  // Price badge
+  priceBadgeWrapper: {
+    alignItems: "center",
+    marginBottom: 24,
+    gap: 8,
+  },
+  priceBadge: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: KIDS_COLORS.accent,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: KIDS_COLORS.accent,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 10,
+    marginBottom: 4,
+  },
+  priceBadgeAmount: {
+    fontFamily: "Nunito_800ExtraBold",
+    fontSize: 34,
+    color: KIDS_COLORS.text,
+  },
+  priceTagline: {
+    fontFamily: "Nunito_600SemiBold",
+    fontSize: 13,
+    color: KIDS_COLORS.textSecondary,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  priceOwnership: {
+    fontFamily: "Nunito_700Bold",
+    fontSize: 15,
+    color: KIDS_COLORS.text,
+    textAlign: "center",
+  },
+
+  // Unlock button
+  unlockBtn: {
     backgroundColor: KIDS_COLORS.primary,
     borderRadius: 20,
     height: 60,
@@ -484,7 +558,7 @@ const styles = StyleSheet.create({
     elevation: 8,
     marginBottom: 12,
   },
-  subscribeBtnText: {
+  unlockBtnText: {
     fontFamily: "Nunito_800ExtraBold",
     fontSize: 20,
     color: "#fff",
@@ -522,55 +596,17 @@ const styles = StyleSheet.create({
     color: KIDS_COLORS.primary,
   },
 
-  // Cancel note
-  cancelNote: {
-    fontFamily: "Nunito_400Regular",
-    fontSize: 13,
-    color: KIDS_COLORS.textSecondary,
-    textAlign: "center",
-    marginBottom: 8,
-  },
-
   // Restore
   restoreBtn: {
     alignItems: "center",
     paddingVertical: 10,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   restoreBtnText: {
     fontFamily: "Nunito_600SemiBold",
     fontSize: 15,
     color: KIDS_COLORS.textSecondary,
     textDecorationLine: "underline",
-  },
-
-  // Cancel info card
-  cancelCard: {
-    backgroundColor: "#F3F4F6",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-  },
-  cancelCardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  cancelCardTitle: {
-    fontFamily: "Nunito_700Bold",
-    fontSize: 15,
-    color: KIDS_COLORS.text,
-  },
-  cancelCardChevron: {
-    fontSize: 12,
-    color: KIDS_COLORS.textSecondary,
-  },
-  cancelCardBody: {
-    fontFamily: "Nunito_400Regular",
-    fontSize: 13,
-    color: KIDS_COLORS.textSecondary,
-    lineHeight: 20,
-    marginTop: 10,
   },
 
   // Legal
@@ -583,8 +619,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  // Subscribed state
-  subscribedContent: {
+  // Owned state
+  ownedContent: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -594,13 +630,13 @@ const styles = StyleSheet.create({
   celebrationEmoji: {
     fontSize: 80,
   },
-  subscribedTitle: {
+  ownedTitle: {
     fontFamily: "Nunito_800ExtraBold",
-    fontSize: 32,
+    fontSize: 30,
     color: "#fff",
     textAlign: "center",
   },
-  subscribedSubtitle: {
+  ownedSubtitle: {
     fontFamily: "Nunito_600SemiBold",
     fontSize: 18,
     color: "rgba(255,255,255,0.9)",
