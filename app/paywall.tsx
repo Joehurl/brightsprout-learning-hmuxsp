@@ -12,7 +12,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Platform,
   Animated,
   Dimensions,
 } from "react-native";
@@ -206,7 +205,6 @@ export default function PaywallScreen() {
 
   const priceString = selectedPackage?.product?.priceString ?? "$4.99";
   const ctaLabel = purchasing ? "" : `Unlock Everything — ${priceString}`;
-  const storeName = Platform.OS === "ios" ? "App Store" : "Google Play";
 
   return (
     <View style={styles.container}>
@@ -338,7 +336,7 @@ export default function PaywallScreen() {
 
             {/* Legal */}
             <Text style={styles.legalText}>
-              {`One-time purchase. Payment processed by ${storeName}. No recurring charges.`}
+              One-time purchase. No subscription. Payment charged to your Google Play account.
             </Text>
           </View>
         </ScrollView>

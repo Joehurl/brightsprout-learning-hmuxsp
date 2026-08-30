@@ -5,7 +5,7 @@
  * Reads API keys from app.json (expo.extra) automatically.
  *
  * Supports:
- * - Native iOS/Android via RevenueCat SDK
+ * - Native Android via RevenueCat SDK
  * - Web preview via RevenueCat REST API (read-only pricing display)
  * - Expo Go via test store keys
  *
@@ -26,7 +26,6 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
-import { Platform } from "react-native";
 import Purchases, {
   PurchasesOfferings,
   PurchasesOffering,
@@ -38,9 +37,7 @@ import * as SecureStore from "expo-secure-store";
 
 // Read API keys from app.json (expo.extra)
 const extra = Constants.expoConfig?.extra || {};
-const IOS_API_KEY = extra.revenueCatApiKeyIos || "";
 const ANDROID_API_KEY = extra.revenueCatApiKeyAndroid || "";
-const TEST_IOS_API_KEY = extra.revenueCatTestApiKeyIos || "";
 const TEST_ANDROID_API_KEY = extra.revenueCatTestApiKeyAndroid || "";
 const ENTITLEMENT_ID = extra.revenueCatEntitlementId || "pro";
 
@@ -151,17 +148,13 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         // Use DEBUG log level in development, INFO in production
         Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.INFO);
 
-        // Get API key based on platform and environment
-        // In development (__DEV__), use ANY available test key (test store works for all platforms)
-        // This allows Expo Go to work on iOS even without a platform-specific test key
-        const testKey = TEST_IOS_API_KEY || TEST_ANDROID_API_KEY;
-        const productionKey = Platform.OS === "ios" ? IOS_API_KEY : ANDROID_API_KEY;
-        const apiKey = __DEV__ && testKey ? testKey : productionKey;
+        // Get API key based on environment
+        const apiKey = __DEV__ && TEST_ANDROID_API_KEY ? TEST_ANDROID_API_KEY : ANDROID_API_KEY;
 
         if (!apiKey) {
           console.warn(
-            "[RevenueCat] API key not provided for this platform. " +
-            "Please add revenueCatApiKeyIos/revenueCatApiKeyAndroid to app.json extra."
+            "[RevenueCat] Android API key not provided. " +
+            "Please add revenueCatApiKeyAndroid to app.json extra."
           );
           setLoading(false);
           return;
