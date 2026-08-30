@@ -1,0 +1,219 @@
+import React, { useRef, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Animated,
+  Dimensions,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { KIDS_COLORS } from '@/constants/Colors';
+import { useProgress } from '@/contexts/ProgressContext';
+import { AnimatedPressable } from '@/components/AnimatedPressable';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_SIZE = (SCREEN_WIDTH - 48 - 12) / 2;
+
+interface Category {
+  id: string;
+  label: string;
+  emoji: string;
+  color: string;
+  bg: string;
+  games: string[];
+}
+
+const CATEGORIES: Category[] = [
+  { id: 'letters', label: 'Letters', emoji: '🔤', color: KIDS_COLORS.letters, bg: KIDS_COLORS.lettersMuted, games: ['alphabet-adventure', 'letter-trace', 'letter-match', 'phonics'] },
+  { id: 'numbers', label: 'Numbers', emoji: '🔢', color: KIDS_COLORS.numbers, bg: KIDS_COLORS.numbersMuted, games: ['counting', 'number-quiz', 'addition'] },
+  { id: 'shapes', label: 'Shapes', emoji: '🔷', color: KIDS_COLORS.shapes, bg: KIDS_COLORS.shapesMuted, games: ['shape-sorter'] },
+  { id: 'colors', label: 'Colors', emoji: '🎨', color: KIDS_COLORS.colors, bg: KIDS_COLORS.colorsMuted, games: ['color-paint'] },
+  { id: 'animals', label: 'Animals', emoji: '🦁', color: KIDS_COLORS.animals, bg: KIDS_COLORS.animalsMuted, games: ['animal-sounds'] },
+  { id: 'music', label: 'Music', emoji: '🎵', color: KIDS_COLORS.music, bg: KIDS_COLORS.musicMuted, games: ['alphabet-adventure'] },
+];
+
+export default function HomeScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { progress } = useProgress();
+
+  const bounceAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.spring(bounceAnim, { toValue: -12, useNativeDriver: true, speed: 3, bounciness: 8 }),
+        Animated.spring(bounceAnim, { toValue: 0, useNativeDriver: true, speed: 3, bounciness: 8 }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+
+  const getCategoryStars = (games: string[]) => {
+    return games.reduce((sum, gameId) => {
+      const g = progress.games[gameId];
+      return sum + (g ? g.starsEarned : 0);
+    }, 0);
+  };
+
+  const streakText = progress.streak > 0 ? `🔥 Day ${progress.streak} streak! Keep it up!` : '🌱 Start your learning streak today!';
+
+  const handleCategoryPress = (categoryId: string) => {
+    console.log('[HomeScreen iOS] Category pressed:', categoryId);
+    router.push(`/(tabs)/(home)/category/${categoryId}` as any);
+  };
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Animated.View style={[styles.mascotCircle, { transform: [{ translateY: bounceAnim }] }]}>
+            <Text style={styles.mascotEmoji}>🌱</Text>
+          </Animated.View>
+          <View style={styles.headerText}>
+            <Text style={styles.greeting}>Hi there!</Text>
+            <Text style={styles.subtitle}>Ready to learn?</Text>
+          </View>
+        </View>
+
+        <Text style={styles.mainTitle}>Let's Play & Learn!</Text>
+
+        <View style={styles.grid}>
+          {CATEGORIES.map((cat) => {
+            const stars = getCategoryStars(cat.games);
+            const maxStars = cat.games.length * 3;
+            return (
+              <AnimatedPressable
+                key={cat.id}
+                style={[styles.card, { backgroundColor: cat.bg }]}
+                onPress={() => handleCategoryPress(cat.id)}
+              >
+                <Text style={styles.cardEmoji}>{cat.emoji}</Text>
+                <Text style={[styles.cardLabel, { color: cat.color }]}>{cat.label}</Text>
+                <View style={[styles.starBadge, { backgroundColor: cat.color }]}>
+                  <Text style={styles.starBadgeText}>⭐ {stars}/{maxStars}</Text>
+                </View>
+              </AnimatedPressable>
+            );
+          })}
+        </View>
+
+        <View style={styles.streakBanner}>
+          <Text style={styles.streakText}>{streakText}</Text>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: KIDS_COLORS.background,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 16,
+  },
+  mascotCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: KIDS_COLORS.primaryMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: KIDS_COLORS.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  mascotEmoji: {
+    fontSize: 40,
+  },
+  headerText: {
+    flex: 1,
+  },
+  greeting: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 22,
+    color: KIDS_COLORS.text,
+  },
+  subtitle: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 16,
+    color: KIDS_COLORS.textSecondary,
+  },
+  mainTitle: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 32,
+    color: KIDS_COLORS.text,
+    marginBottom: 24,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 24,
+  },
+  card: {
+    width: CARD_SIZE,
+    aspectRatio: 1,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    shadowColor: KIDS_COLORS.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  cardEmoji: {
+    fontSize: 48,
+    marginBottom: 8,
+  },
+  cardLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 20,
+    marginBottom: 8,
+  },
+  starBadge: {
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  starBadgeText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: '#FFFFFF',
+  },
+  streakBanner: {
+    backgroundColor: KIDS_COLORS.primary,
+    borderRadius: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  streakText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 18,
+    color: '#FFFFFF',
+  },
+});
