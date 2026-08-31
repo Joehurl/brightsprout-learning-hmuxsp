@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "BrightSprout",
-    "slug": "brightsprout-learning-hmuxsp",
+    "slug": "brightsprout",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/app-icon-okg.png",
