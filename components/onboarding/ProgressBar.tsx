@@ -12,7 +12,7 @@ export function ProgressBar({ totalSteps, currentStep }: ProgressBarProps) {
 
   if (!totalSteps || totalSteps <= 0) return null;
 
-  const segments = [];
+  const segments: React.ReactElement[] = [];
   for (let i = 0; i < totalSteps; i++) {
     segments.push(
       <View

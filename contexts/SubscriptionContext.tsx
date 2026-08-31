@@ -26,6 +26,7 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
+import { Platform } from "react-native";
 import Purchases, {
   PurchasesOfferings,
   PurchasesOffering,
@@ -110,7 +111,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
   // Initialize RevenueCat on mount
   useEffect(() => {
-    let customerInfoListener: { remove: () => void } | null = null;
+    let customerInfoCallback: ((customerInfo: any) => void) | null = null;
 
     const initRevenueCat = async () => {
       try {
@@ -174,18 +175,17 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         await Purchases.configure({ apiKey });
 
         // Listen for real-time subscription changes (e.g., purchase from another device)
-        customerInfoListener = Purchases.addCustomerInfoUpdateListener(
-          (customerInfo) => {
-            const hasEntitlement =
-              typeof customerInfo.entitlements.active[ENTITLEMENT_ID] !==
-              "undefined";
-            // In __DEV__: don't clear subscription state — RevenueCat test store purchases are
-            // in-memory only and won't be known to RC after a configure() call on reload.
-            if (hasEntitlement || !__DEV__) {
-              setIsSubscribed(hasEntitlement);
-            }
+        customerInfoCallback = (customerInfo) => {
+          const hasEntitlement =
+            typeof customerInfo.entitlements.active[ENTITLEMENT_ID] !==
+            "undefined";
+          // In __DEV__: don't clear subscription state — RevenueCat test store purchases are
+          // in-memory only and won't be known to RC after a configure() call on reload.
+          if (hasEntitlement || !__DEV__) {
+            setIsSubscribed(hasEntitlement);
           }
-        );
+        };
+        Purchases.addCustomerInfoUpdateListener(customerInfoCallback);
 
         // Fetch available products/packages
         await fetchOfferings();
@@ -203,8 +203,8 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
     // Cleanup listener on unmount
     return () => {
-      if (customerInfoListener) {
-        customerInfoListener.remove();
+      if (customerInfoCallback) {
+        Purchases.removeCustomerInfoUpdateListener(customerInfoCallback);
       }
     };
   }, []);

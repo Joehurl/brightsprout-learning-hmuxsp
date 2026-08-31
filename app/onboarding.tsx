@@ -80,7 +80,7 @@ export default function OnboardingScreen() {
 
   if (!question) return null;
 
-  const optionCards = [];
+  const optionCards: React.ReactElement[] = [];
   for (const option of question.options) {
     optionCards.push(
       <OptionCard key={option.id} emoji={option.emoji} label={option.label} selected={selectedOption === option.id} onPress={() => handleSelect(option.id)} />
