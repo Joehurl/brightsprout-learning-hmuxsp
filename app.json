@@ -4,7 +4,7 @@
     "slug": "brightsprout",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/Kids Bright Sprout.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/Kids Bright Sprout.png",
