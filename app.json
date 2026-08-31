@@ -4,16 +4,16 @@
     "slug": "brightsprout",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/app-icon-oig.png",
+    "icon": "./assets/images/Kids Bright Sprout.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/app-icon-oig.png",
+      "image": "./assets/images/Kids Bright Sprout.png",
       "resizeMode": "contain",
       "backgroundColor": "#FFF9F0"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/app-icon-oig.png",
+        "foregroundImage": "./assets/images/Kids Bright Sprout.png",
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.brightsprout.learning",
