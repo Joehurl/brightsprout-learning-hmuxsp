@@ -20,7 +20,7 @@
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.brightsprout.learning",
-      "versionCode": 3,
+      "versionCode": 6,
       "softwareKeyboardLayoutMode": "pan",
       "permissions": [
         "android.permission.VIBRATE"
