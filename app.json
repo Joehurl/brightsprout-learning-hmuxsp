@@ -12,6 +12,9 @@
       "backgroundColor": "#FFF9F0"
     },
     "android": {
+      "notification": {
+        "icon": "./assets/images/notification-icon.png"
+      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/Kids Bright Sprout.png",
         "backgroundColor": "#FFFFFF"

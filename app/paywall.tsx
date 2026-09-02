@@ -14,6 +14,7 @@ import {
   Alert,
   Animated,
   Dimensions,
+  Platform,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -336,7 +337,11 @@ export default function PaywallScreen() {
 
             {/* Legal */}
             <Text style={styles.legalText}>
-              One-time purchase. No subscription. Payment charged to your Google Play account.
+              {Platform.OS === "android"
+                ? "One-time purchase. No subscription. Payment charged to your Google Play account."
+                : Platform.OS === "ios"
+                  ? "One-time purchase. No subscription. Payment charged to your Apple ID."
+                  : "One-time purchase. No subscription. Payment charged to your account."}
             </Text>
           </View>
         </ScrollView>
