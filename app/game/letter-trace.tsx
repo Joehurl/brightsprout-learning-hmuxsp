@@ -46,6 +46,7 @@ export default function LetterTraceScreen() {
 
   const canvasRef = useRef<View>(null);
   const canvasOffset = useRef({ x: 0, y: 0 });
+  const currentPathRef = useRef<Point[]>([]);
 
   const currentLetter = LETTERS[letterIndex % LETTERS.length];
 
@@ -56,20 +57,21 @@ export default function LetterTraceScreen() {
       onPanResponderGrant: (evt) => {
         const { locationX, locationY } = evt.nativeEvent;
         console.log('[LetterTrace] Drawing started at:', locationX, locationY);
+        currentPathRef.current = [{ x: locationX, y: locationY }];
         setCurrentPath([{ x: locationX, y: locationY }]);
       },
       onPanResponderMove: (evt) => {
         const { locationX, locationY } = evt.nativeEvent;
-        setCurrentPath(prev => [...prev, { x: locationX, y: locationY }]);
+        currentPathRef.current = [...currentPathRef.current, { x: locationX, y: locationY }];
+        setCurrentPath([...currentPathRef.current]);
       },
       onPanResponderRelease: () => {
-        console.log('[LetterTrace] Drawing stroke completed');
-        setCurrentPath(prev => {
-          if (prev.length > 0) {
-            setPaths(p => [...p, prev]);
-          }
-          return [];
-        });
+        console.log('[LetterTrace] Drawing stroke completed, points:', currentPathRef.current.length);
+        if (currentPathRef.current.length > 0) {
+          setPaths(p => [...p, currentPathRef.current]);
+        }
+        currentPathRef.current = [];
+        setCurrentPath([]);
       },
     })
   ).current;
