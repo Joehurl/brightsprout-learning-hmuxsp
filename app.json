@@ -53,6 +53,9 @@
       "eas": {
         "projectId": ""
       }
+    },
+    "ios": {
+      "bundleIdentifier": "com.brightsprout.learning"
     }
   }
 }
