@@ -32,7 +32,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     return { newBadges };
   }, []);
 
-  useEffect(() => { refreshProgress(); }, []);
+  useEffect(() => { refreshProgress(); }, [refreshProgress]);
 
   return (
     <ProgressContext.Provider value={{ progress, refreshProgress, completeGame }}>

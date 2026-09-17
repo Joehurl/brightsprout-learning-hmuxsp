@@ -63,6 +63,7 @@ export function GameCompleteOverlay({ visible, stars, message, onPlayAgain, onGo
         }
       });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   const starAnims = [star1, star2, star3];

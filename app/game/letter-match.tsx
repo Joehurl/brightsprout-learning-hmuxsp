@@ -129,6 +129,7 @@ export default function LetterMatchScreen() {
         setLower(prev => prev.map((c, i) => i === li ? { ...c, selected: false } : c));
       }, 600);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [upper, lower, score, roundIndex, buildRound, completeGame]);
 
   const handleUpperPress = (i: number) => {

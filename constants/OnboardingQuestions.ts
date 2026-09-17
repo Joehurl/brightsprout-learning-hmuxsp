@@ -13,59 +13,55 @@ export interface OnboardingQuestion {
 
 export const onboardingQuestions: OnboardingQuestion[] = [
   {
-    id: "goal",
-    title: "What's your main goal?",
-    subtitle: "This helps us personalize your experience",
+    id: "child_age",
+    title: "How old is your child?",
+    subtitle: "We'll tailor activities to the right level",
     options: [
-      { id: "learn", emoji: "📚", label: "Learn something new" },
-      { id: "organize", emoji: "📋", label: "Stay organized" },
-      { id: "connect", emoji: "🤝", label: "Connect with others" },
-      { id: "fun", emoji: "🎉", label: "Have fun" },
-      { id: "health", emoji: "💪", label: "Get healthier" },
+      { id: "age_2_3", emoji: "🐣", label: "2–3 years old" },
+      { id: "age_4_5", emoji: "🌱", label: "4–5 years old" },
+      { id: "age_6_7", emoji: "🌟", label: "6–7 years old" },
+    ],
+  },
+  {
+    id: "learning_focus",
+    title: "What would you like to focus on?",
+    subtitle: "Pick what matters most right now",
+    options: [
+      { id: "letters", emoji: "🔤", label: "Letters & Reading" },
+      { id: "numbers", emoji: "🔢", label: "Numbers & Math" },
+      { id: "creativity", emoji: "🎨", label: "Creativity & Drawing" },
+      { id: "all", emoji: "🌈", label: "A bit of everything" },
+    ],
+  },
+  {
+    id: "experience",
+    title: "Has your child used a learning app before?",
+    subtitle: "This helps us set the right starting point",
+    options: [
+      { id: "first_time", emoji: "👶", label: "First time!" },
+      { id: "some", emoji: "📖", label: "A little bit" },
+      { id: "experienced", emoji: "🏆", label: "Yes, quite a bit" },
+    ],
+  },
+  {
+    id: "session_length",
+    title: "How long are your learning sessions?",
+    subtitle: "Short bursts or longer playtime — you decide",
+    options: [
+      { id: "short", emoji: "⚡", label: "5–10 minutes" },
+      { id: "medium", emoji: "⏱️", label: "10–20 minutes" },
+      { id: "long", emoji: "🕐", label: "20+ minutes" },
     ],
   },
   {
     id: "source",
-    title: "How did you hear about us?",
+    title: "How did you hear about BrightSprout?",
     subtitle: "We'd love to know what brought you here",
     options: [
       { id: "social", emoji: "📱", label: "Social media" },
       { id: "friend", emoji: "👫", label: "Friend or family" },
       { id: "appstore", emoji: "🏠", label: "App Store" },
       { id: "search", emoji: "🔍", label: "Online search" },
-    ],
-  },
-  {
-    id: "identity",
-    title: "What best describes you?",
-    subtitle: "Help us understand who you are",
-    options: [
-      { id: "student", emoji: "🎓", label: "Student" },
-      { id: "professional", emoji: "💼", label: "Professional" },
-      { id: "hobbyist", emoji: "🎨", label: "Hobbyist" },
-      { id: "parent", emoji: "👨‍👩‍👧‍👦", label: "Parent" },
-    ],
-  },
-  {
-    id: "frequency",
-    title: "How often do you plan to use this app?",
-    subtitle: "No pressure — there's no wrong answer",
-    options: [
-      { id: "daily", emoji: "☀️", label: "Daily" },
-      { id: "few_times", emoji: "📅", label: "A few times a week" },
-      { id: "weekly", emoji: "🗓️", label: "Weekly" },
-      { id: "trying", emoji: "👋", label: "Just trying it out" },
-    ],
-  },
-  {
-    id: "features",
-    title: "What features interest you most?",
-    subtitle: "We'll highlight what matters to you",
-    options: [
-      { id: "recommendations", emoji: "✨", label: "Personalized recommendations" },
-      { id: "community", emoji: "👥", label: "Community" },
-      { id: "tracking", emoji: "📊", label: "Tracking progress" },
-      { id: "learning", emoji: "🧠", label: "Learning new things" },
     ],
   },
 ];

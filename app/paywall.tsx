@@ -68,6 +68,7 @@ function FloatingEmoji({ emoji, position, delay }: { emoji: string; position: { 
     );
     loop.start();
     return () => loop.stop();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -103,7 +104,7 @@ export default function PaywallScreen() {
     if (packages.length > 0 && !selectedPackage) {
       setSelectedPackage(packages[0]);
     }
-  }, [packages]);
+  }, [packages, selectedPackage]);
 
   const handleClose = () => {
     console.log("[Paywall] Close button pressed — returning to home (free preview)");

@@ -151,6 +151,7 @@ export function Mascot({
       animRef.current?.stop();
       animRef.current = null;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [animate, expression]);
 
   // Speech bubble float animation
@@ -164,6 +165,7 @@ export function Mascot({
     );
     floatAnim.start();
     return () => floatAnim.stop();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speechBubble]);
 
   const rotateInterpolate = rotate.interpolate({

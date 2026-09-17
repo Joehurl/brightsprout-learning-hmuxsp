@@ -67,7 +67,7 @@ function SubscriptionRedirect() {
       }
     });
     return () => { cancelled = true; };
-  }, [isSubscribed, loading, pathname]);
+  }, [isSubscribed, loading, pathname, router]);
 
   return null;
 }
