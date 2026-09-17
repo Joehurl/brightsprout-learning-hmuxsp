@@ -15,6 +15,7 @@ import {
   Animated,
   Dimensions,
   Platform,
+  Linking,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -24,6 +25,9 @@ import { useSubscription } from "@/contexts/SubscriptionContext";
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { KIDS_COLORS } from "@/constants/Colors";
 import { Mascot } from "@/components/Mascot";
+
+const PRIVACY_POLICY_URL = "https://brightsprout.app/privacy";
+const TERMS_URL = "https://brightsprout.app/terms";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -336,6 +340,17 @@ export default function PaywallScreen() {
               )}
             </TouchableOpacity>
 
+            {/* Privacy Policy & Terms links */}
+            <View style={styles.legalLinksRow}>
+              <TouchableOpacity onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}>
+                <Text style={styles.legalLink}>Privacy Policy</Text>
+              </TouchableOpacity>
+              <Text style={styles.legalLinkSep}>·</Text>
+              <TouchableOpacity onPress={() => Linking.openURL(TERMS_URL)}>
+                <Text style={styles.legalLink}>Terms of Service</Text>
+              </TouchableOpacity>
+            </View>
+
             {/* Legal */}
             <Text style={styles.legalText}>
               {Platform.OS === "android"
@@ -614,6 +629,24 @@ const styles = StyleSheet.create({
   },
 
   // Legal
+  legalLinksRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 6,
+  },
+  legalLink: {
+    fontFamily: "Nunito_600SemiBold",
+    fontSize: 12,
+    color: KIDS_COLORS.primary,
+    textDecorationLine: "underline",
+  },
+  legalLinkSep: {
+    fontFamily: "Nunito_400Regular",
+    fontSize: 12,
+    color: KIDS_COLORS.textSecondary,
+  },
   legalText: {
     fontFamily: "Nunito_400Regular",
     fontSize: 11,

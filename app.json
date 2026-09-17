@@ -53,7 +53,10 @@
       "router": {},
       "eas": {
         "projectId": ""
-      }
+      },
+      "revenueCatApiKeyAndroid": "",
+      "revenueCatTestApiKeyAndroid": "",
+      "revenueCatEntitlementId": "pro"
     },
     "ios": {
       "bundleIdentifier": "com.brightsprout.learning",

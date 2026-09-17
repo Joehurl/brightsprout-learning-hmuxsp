@@ -7,6 +7,7 @@ import {
   Animated,
   Alert,
   Dimensions,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Lock, LogOut } from 'lucide-react-native';
@@ -432,6 +433,43 @@ export default function ParentScreen() {
         <AnimatedPressable style={styles.resetBtn} onPress={handleResetProgress}>
           <Text style={styles.resetBtnText}>Reset All Progress</Text>
         </AnimatedPressable>
+
+        {/* Data & Privacy */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Data & Privacy</Text>
+          <Text style={styles.dataPrivacyBody}>
+            BrightSprout stores your child's progress locally on this device only. No personal data is sent to external servers.
+          </Text>
+          <AnimatedPressable
+            style={styles.deleteDataBtn}
+            onPress={() =>
+              Alert.alert(
+                'Delete All Data',
+                'This will permanently erase all progress, badges, settings, and purchase records stored on this device. This cannot be undone.\n\nTo also request removal of any account data, email us at privacy@brightsprout.app.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Delete Data',
+                    style: 'destructive',
+                    onPress: async () => {
+                      await saveProgress({ ...defaultProgress });
+                      await refreshProgress();
+                      Alert.alert('Data Deleted', 'All local data has been erased.');
+                    },
+                  },
+                ]
+              )
+            }
+          >
+            <Text style={styles.deleteDataBtnText}>🗑️  Delete My Data</Text>
+          </AnimatedPressable>
+          <AnimatedPressable
+            style={styles.contactSupportBtn}
+            onPress={() => Linking.openURL('mailto:privacy@brightsprout.app?subject=Data%20Deletion%20Request')}
+          >
+            <Text style={styles.contactSupportText}>✉️  Contact Support / Data Request</Text>
+          </AnimatedPressable>
+        </View>
       </ScrollView>
     </View>
   );
@@ -801,5 +839,35 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_800ExtraBold',
     fontSize: 18,
     color: '#FFFFFF',
+  },
+  dataPrivacyBody: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 14,
+    color: KIDS_COLORS.textSecondary,
+    lineHeight: 20,
+  },
+  deleteDataBtn: {
+    backgroundColor: '#FEE2E2',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  deleteDataBtnText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 15,
+    color: KIDS_COLORS.danger,
+  },
+  contactSupportBtn: {
+    backgroundColor: KIDS_COLORS.primaryMuted,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  contactSupportText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 15,
+    color: KIDS_COLORS.primary,
   },
 });
