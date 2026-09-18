@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
-import Svg, { Path, Circle, Rect, Polygon } from 'react-native-svg';
+import Svg, { Path, Circle, Rect, Polygon, Text as SvgText } from 'react-native-svg';
 import { KIDS_COLORS } from '@/constants/Colors';
 import { useProgress } from '@/contexts/ProgressContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
@@ -25,11 +25,16 @@ const PALETTE = [
   { name: 'White', hex: '#FFFFFF' },
 ];
 
-const COLOR_MIXES = [
-  { c1: 'Red', c2: 'Blue', result: 'Purple', emoji: '🟣' },
-  { c1: 'Red', c2: 'Yellow', result: 'Orange', emoji: '🟠' },
-  { c1: 'Blue', c2: 'Yellow', result: 'Green', emoji: '🟢' },
-];
+const COLOR_LETTER: Record<string, string> = {
+  Red: 'R',
+  Blue: 'B',
+  Yellow: 'Y',
+  Green: 'G',
+  Orange: 'O',
+  Purple: 'P',
+  Pink: 'K',
+  White: 'W',
+};
 
 const REGIONS = ['sky', 'sun', 'house', 'roof', 'grass'] as const;
 type Region = typeof REGIONS[number];
@@ -42,6 +47,35 @@ const DEFAULT_COLORS: Record<Region, string> = {
   grass: '#E8F5E9',
 };
 
+// Center points for the letter label in each region (SVG coords, viewBox 300x220)
+const REGION_LABEL_POS: Record<Region, { x: number; y: number }> = {
+  sky: { x: 60, y: 70 },
+  sun: { x: 240, y: 40 },
+  house: { x: 150, y: 130 },
+  roof: { x: 150, y: 78 },
+  grass: { x: 60, y: 170 },
+};
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function generateTargetColors(): Record<Region, string> {
+  const picked = shuffle(PALETTE.map(p => p.name)).slice(0, 5);
+  return {
+    sky: picked[0],
+    sun: picked[1],
+    house: picked[2],
+    roof: picked[3],
+    grass: picked[4],
+  };
+}
+
 export default function ColorPaintScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -49,64 +83,96 @@ export default function ColorPaintScreen() {
 
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedColorName, setSelectedColorName] = useState<string | null>(null);
-  const [regionColors, setRegionColors] = useState<Record<Region, string>>({ ...DEFAULT_COLORS });
-  const [coloredRegions, setColoredRegions] = useState<Set<Region>>(new Set());
-  const [lastSelected, setLastSelected] = useState<string | null>(null);
-  const [mixHint, setMixHint] = useState<string | null>(null);
+  const [targetColors, setTargetColors] = useState<Record<Region, string>>(generateTargetColors);
+  const [paintedColors, setPaintedColors] = useState<Record<Region, string | null>>({
+    sky: null, sun: null, house: null, roof: null, grass: null,
+  });
+  const [errorRegions, setErrorRegions] = useState<Set<Region>>(new Set());
+  const [round, setRound] = useState(1);
   const [showComplete, setShowComplete] = useState(false);
 
   const handleSelectColor = (color: { name: string; hex: string }) => {
     console.log('[ColorPaint] Color selected:', color.name);
     playSound('pop');
-
-    // Check for mix hint
-    if (lastSelected) {
-      const mix = COLOR_MIXES.find(
-        m => (m.c1 === lastSelected && m.c2 === color.name) || (m.c1 === color.name && m.c2 === lastSelected)
-      );
-      if (mix) {
-        setMixHint(`${mix.c1} + ${mix.c2} = ${mix.result}! ${mix.emoji}`);
-        setTimeout(() => setMixHint(null), 2500);
-      }
-    }
-
-    setLastSelected(color.name);
     setSelectedColor(color.hex);
     setSelectedColorName(color.name);
   };
 
-  const handleRegionPress = async (region: Region) => {
-    if (!selectedColor) return;
-    console.log('[ColorPaint] Region pressed:', region, 'with color:', selectedColorName);
+  const handleRegionPress = useCallback(async (region: Region) => {
+    if (!selectedColorName) return;
+    console.log('[ColorPaint] Region pressed:', region, 'selected color:', selectedColorName, 'target:', targetColors[region]);
 
-    const newColors = { ...regionColors, [region]: selectedColor };
-    setRegionColors(newColors);
+    const isCorrect = selectedColorName === targetColors[region];
 
-    const newColored = new Set([...coloredRegions, region]);
-    setColoredRegions(newColored);
+    if (isCorrect) {
+      playSound('pop');
+      const newPainted = { ...paintedColors, [region]: selectedColor };
+      setPaintedColors(newPainted);
 
-    if (newColored.size >= 5) {
-      await completeGame('color-paint', 2);
-      setShowComplete(true);
+      const allDone = REGIONS.every(r => newPainted[r] !== null);
+      if (allDone) {
+        console.log('[ColorPaint] Round', round, 'complete!');
+        if (round >= 3) {
+          await completeGame('color-paint', 2);
+          setShowComplete(true);
+        } else {
+          setTimeout(() => {
+            const newTargets = generateTargetColors();
+            setTargetColors(newTargets);
+            setPaintedColors({ sky: null, sun: null, house: null, roof: null, grass: null });
+            setRound(r => r + 1);
+            setSelectedColor(null);
+            setSelectedColorName(null);
+          }, 1000);
+        }
+      }
+    } else {
+      console.log('[ColorPaint] Wrong tap — region:', region, 'expected:', targetColors[region], 'got:', selectedColorName);
+      setErrorRegions(prev => new Set([...prev, region]));
+      setTimeout(() => {
+        setErrorRegions(prev => {
+          const next = new Set(prev);
+          next.delete(region);
+          return next;
+        });
+      }, 400);
     }
-  };
+  }, [selectedColorName, selectedColor, targetColors, paintedColors, round, completeGame]);
 
   const handlePlayAgain = () => {
     console.log('[ColorPaint] Play again pressed');
     setShowComplete(false);
-    setRegionColors({ ...DEFAULT_COLORS });
-    setColoredRegions(new Set());
+    setTargetColors(generateTargetColors());
+    setPaintedColors({ sky: null, sun: null, house: null, roof: null, grass: null });
     setSelectedColor(null);
     setSelectedColorName(null);
-    setLastSelected(null);
-    setMixHint(null);
+    setRound(1);
+    setErrorRegions(new Set());
   };
 
-  const sky = regionColors.sky;
-  const sun = regionColors.sun;
-  const house = regionColors.house;
-  const roof = regionColors.roof;
-  const grass = regionColors.grass;
+  // Resolve fill for each region
+  const getFill = (region: Region): string => {
+    if (errorRegions.has(region)) return '#FF4444';
+    if (paintedColors[region]) return paintedColors[region] as string;
+    return DEFAULT_COLORS[region];
+  };
+
+  const skyFill = getFill('sky');
+  const sunFill = getFill('sun');
+  const houseFill = getFill('house');
+  const roofFill = getFill('roof');
+  const grassFill = getFill('grass');
+
+  // Show letter label only if not yet painted
+  const showLabel = (region: Region): boolean => paintedColors[region] === null;
+
+  const getLabel = (region: Region): string => COLOR_LETTER[targetColors[region]] ?? '?';
+
+  const paintedCount = REGIONS.filter(r => paintedColors[r] !== null).length;
+
+  const instructionText = selectedColorName
+    ? `Tap the section for "${COLOR_LETTER[selectedColorName] ?? selectedColorName[0]}"`
+    : 'Pick a color, then tap the matching letter!';
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
@@ -120,26 +186,13 @@ export default function ColorPaintScreen() {
         >
           <ChevronLeft size={28} color={KIDS_COLORS.colors} />
         </AnimatedPressable>
-        <Text style={styles.title}>Color Mixing 🎨</Text>
+        <Text style={styles.title}>Paint the House 🎨</Text>
         <View style={styles.scoreBadge}>
-          <Text style={styles.scoreText}>{coloredRegions.size}/5</Text>
+          <Text style={styles.scoreText}>{round}/3</Text>
         </View>
       </View>
 
-      {selectedColorName && (
-        <Text style={styles.selectedColorText}>
-          Selected: <Text style={{ color: selectedColor ?? KIDS_COLORS.text }}>{selectedColorName}</Text>
-        </Text>
-      )}
-      {!selectedColor && (
-        <Text style={styles.instruction}>Pick a color, then tap a part of the scene!</Text>
-      )}
-
-      {mixHint && (
-        <View style={styles.mixHintBanner}>
-          <Text style={styles.mixHintText}>{mixHint}</Text>
-        </View>
-      )}
+      <Text style={styles.instruction}>{instructionText}</Text>
 
       {/* Scene */}
       <View style={styles.sceneContainer}>
@@ -147,13 +200,13 @@ export default function ColorPaintScreen() {
           {/* Sky */}
           <Rect
             x={0} y={0} width={300} height={140}
-            fill={sky}
+            fill={skyFill}
             onPress={() => handleRegionPress('sky')}
           />
           {/* Sun */}
           <Circle
             cx={240} cy={40} r={30}
-            fill={sun}
+            fill={sunFill}
             stroke="#E0E0E0"
             strokeWidth={1}
             onPress={() => handleRegionPress('sun')}
@@ -161,13 +214,13 @@ export default function ColorPaintScreen() {
           {/* Grass */}
           <Rect
             x={0} y={140} width={300} height={80}
-            fill={grass}
+            fill={grassFill}
             onPress={() => handleRegionPress('grass')}
           />
           {/* House body */}
           <Rect
             x={80} y={100} width={140} height={80}
-            fill={house}
+            fill={houseFill}
             stroke="#CCCCCC"
             strokeWidth={1}
             onPress={() => handleRegionPress('house')}
@@ -175,7 +228,7 @@ export default function ColorPaintScreen() {
           {/* Roof */}
           <Polygon
             points="70,100 150,50 230,100"
-            fill={roof}
+            fill={roofFill}
             stroke="#CCCCCC"
             strokeWidth={1}
             onPress={() => handleRegionPress('roof')}
@@ -185,6 +238,73 @@ export default function ColorPaintScreen() {
           {/* Windows */}
           <Rect x={95} y={115} width={30} height={25} fill="#87CEEB" rx={3} />
           <Rect x={175} y={115} width={30} height={25} fill="#87CEEB" rx={3} />
+
+          {/* Target letters */}
+          {showLabel('sky') && (
+            <SvgText
+              x={REGION_LABEL_POS.sky.x}
+              y={REGION_LABEL_POS.sky.y}
+              fontSize={28}
+              fontWeight="bold"
+              fill="#333333"
+              textAnchor="middle"
+              alignmentBaseline="middle"
+            >
+              {getLabel('sky')}
+            </SvgText>
+          )}
+          {showLabel('sun') && (
+            <SvgText
+              x={REGION_LABEL_POS.sun.x}
+              y={REGION_LABEL_POS.sun.y}
+              fontSize={22}
+              fontWeight="bold"
+              fill="#333333"
+              textAnchor="middle"
+              alignmentBaseline="middle"
+            >
+              {getLabel('sun')}
+            </SvgText>
+          )}
+          {showLabel('house') && (
+            <SvgText
+              x={REGION_LABEL_POS.house.x}
+              y={REGION_LABEL_POS.house.y}
+              fontSize={28}
+              fontWeight="bold"
+              fill="#333333"
+              textAnchor="middle"
+              alignmentBaseline="middle"
+            >
+              {getLabel('house')}
+            </SvgText>
+          )}
+          {showLabel('roof') && (
+            <SvgText
+              x={REGION_LABEL_POS.roof.x}
+              y={REGION_LABEL_POS.roof.y}
+              fontSize={22}
+              fontWeight="bold"
+              fill="#333333"
+              textAnchor="middle"
+              alignmentBaseline="middle"
+            >
+              {getLabel('roof')}
+            </SvgText>
+          )}
+          {showLabel('grass') && (
+            <SvgText
+              x={REGION_LABEL_POS.grass.x}
+              y={REGION_LABEL_POS.grass.y}
+              fontSize={28}
+              fontWeight="bold"
+              fill="#333333"
+              textAnchor="middle"
+              alignmentBaseline="middle"
+            >
+              {getLabel('grass')}
+            </SvgText>
+          )}
         </Svg>
       </View>
 
@@ -203,7 +323,7 @@ export default function ColorPaintScreen() {
         ))}
       </View>
 
-      <Text style={styles.regionHint}>Tap: sky • sun • house • roof • grass</Text>
+      <Text style={styles.progressHint}>{paintedCount}/5 sections painted</Text>
 
       <GameCompleteOverlay
         visible={showComplete}
@@ -258,32 +378,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FFFFFF',
   },
-  selectedColorText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 16,
-    color: KIDS_COLORS.text,
-    textAlign: 'center',
-    marginBottom: 4,
-  },
   instruction: {
     fontFamily: 'Nunito_600SemiBold',
     fontSize: 16,
     color: KIDS_COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 4,
-  },
-  mixHintBanner: {
-    backgroundColor: KIDS_COLORS.primaryMuted,
-    borderRadius: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
     marginBottom: 8,
-    alignItems: 'center',
-  },
-  mixHintText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 16,
-    color: KIDS_COLORS.primary,
   },
   sceneContainer: {
     flex: 1,
@@ -318,7 +418,7 @@ const styles = StyleSheet.create({
     borderColor: KIDS_COLORS.text,
     transform: [{ scale: 1.2 }],
   },
-  regionHint: {
+  progressHint: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     color: KIDS_COLORS.textTertiary,

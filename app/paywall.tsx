@@ -36,7 +36,7 @@ const FREE_GAMES_LIST = [
   "Alphabet Adventure",
   "Counting Stars",
   "Shape Sorter",
-  "Color Mixing",
+  "Paint the House",
   "Animal Sounds",
 ];
 

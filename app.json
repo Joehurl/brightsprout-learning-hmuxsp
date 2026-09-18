@@ -58,7 +58,7 @@
     "ios": {
       "bundleIdentifier": "com.brightsprout.learning",
       "infoPlist": {
-        "NSHumanReadableCopyright": "© 2025 BrightSprout",
+        "NSHumanReadableCopyright": "\u00a9 2025 BrightSprout",
         "ITSAppUsesNonExemptEncryption": false
       }
     }

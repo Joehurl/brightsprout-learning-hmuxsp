@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   },
   questionArea: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 12,
   },
   bigNumber: {
     fontFamily: 'Nunito_800ExtraBold',
@@ -218,15 +218,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   choicesRow: {
-    flexDirection: 'row',
-    gap: 12,
+    flexDirection: 'column',
+    gap: 20,
     flex: 1,
     marginBottom: 16,
   },
   choiceCard: {
     flex: 1,
+    minHeight: 100,
     borderRadius: 20,
-    padding: 12,
+    padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: KIDS_COLORS.shadow,
@@ -245,11 +246,11 @@ const styles = StyleSheet.create({
     alignContent: 'center',
   },
   choiceEmoji: {
-    fontSize: 20,
+    fontSize: 28,
   },
   choiceNumber: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 28,
+    fontSize: 32,
     color: KIDS_COLORS.text,
   },
   progress: {

@@ -94,6 +94,8 @@ export default function ShapeSorterScreen() {
 
   const holeLayouts = useRef<Record<string, { x: number; y: number }>>({});
   const shapeLayouts = useRef<Record<string, { x: number; y: number }>>({});
+  // Stores the original (pre-translation) layout measured once on mount — never updated after first measure
+  const originalShapeLayouts = useRef<Record<string, { x: number; y: number }>>({});
 
   const handleDrop = useCallback(async (shapeId: string, shapeIndex: number, finalX: number, finalY: number) => {
     const holeLayout = holeLayouts.current[shapeId];
@@ -109,9 +111,9 @@ export default function ShapeSorterScreen() {
     console.log('[ShapeSorter] Shape dropped:', shapeId, 'distance to hole:', dist);
 
     if (dist < 80) {
-      // Snap to hole
-      const snapX = holeLayout.x - (shapeLayouts.current[shapeId]?.x ?? 0);
-      const snapY = holeLayout.y - (shapeLayouts.current[shapeId]?.y ?? 0);
+      // Snap to hole — use original (pre-translation) layout so already-snapped shapes don't drift
+      const snapX = holeLayout.x - (originalShapeLayouts.current[shapeId]?.x ?? shapeLayouts.current[shapeId]?.x ?? 0);
+      const snapY = holeLayout.y - (originalShapeLayouts.current[shapeId]?.y ?? shapeLayouts.current[shapeId]?.y ?? 0);
       Animated.spring(positions[shapeIndex], {
         toValue: { x: snapX, y: snapY },
         useNativeDriver: false,
@@ -244,10 +246,12 @@ export default function ShapeSorterScreen() {
             ref={(ref) => {
               if (ref) {
                 (ref as any).measure((_x: number, _y: number, width: number, height: number, pageX: number, pageY: number) => {
-                  shapeLayouts.current[shape.id] = {
-                    x: pageX + width / 2,
-                    y: pageY + height / 2,
-                  };
+                  const center = { x: pageX + width / 2, y: pageY + height / 2 };
+                  shapeLayouts.current[shape.id] = center;
+                  // Only store original layout once — never overwrite after first measure
+                  if (!originalShapeLayouts.current[shape.id]) {
+                    originalShapeLayouts.current[shape.id] = center;
+                  }
                 });
               }
             }}

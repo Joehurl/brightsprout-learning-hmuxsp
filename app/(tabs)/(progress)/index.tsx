@@ -40,7 +40,7 @@ const GAME_NAMES: Record<string, string> = {
   'shape-sorter': 'Shape Sorter',
   'memory-match': 'Memory Match',
   'jigsaw-puzzle': 'Jigsaw Puzzle',
-  'color-paint': 'Color Mixing',
+  'color-paint': 'Paint the House',
   'drawing-canvas': 'Drawing Canvas',
   'animal-sounds': 'Animal Sounds',
 };

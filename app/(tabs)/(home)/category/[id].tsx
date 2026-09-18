@@ -32,7 +32,7 @@ const GAMES: Record<string, GameDef> = {
   'shape-sorter': { name: 'Shape Sorter', desc: 'Drop shapes into the right holes', emoji: '🔷', minAge: 2 },
   'memory-match': { name: 'Memory Match', desc: 'Find matching pairs of cards', emoji: '🧠', minAge: 3 },
   'jigsaw-puzzle': { name: 'Jigsaw Puzzle', desc: 'Drag pieces to complete the puzzle', emoji: '🧩', minAge: 2 },
-  'color-paint': { name: 'Color Mixing', desc: 'Mix colors to paint a scene', emoji: '🎨', minAge: 2 },
+  'color-paint': { name: 'Paint the House', desc: 'Paint each section the color shown!', emoji: '🎨', minAge: 2 },
   'drawing-canvas': { name: 'Drawing Canvas', desc: 'Draw anything you imagine!', emoji: '✏️', minAge: 2 },
   'animal-sounds': { name: 'Animal Sounds', desc: 'Guess the animal by its sound', emoji: '🦁', minAge: 2 },
 };
