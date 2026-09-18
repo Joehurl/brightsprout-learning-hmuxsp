@@ -2,7 +2,6 @@
   "expo": {
     "name": "BrightSprout",
     "slug": "brightsprout",
-    "copyright": "\u00a9 2025 BrightSprout",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,11 +12,8 @@
       "backgroundColor": "#FFF9F0"
     },
     "android": {
-      "notification": {
-        "icon": "./assets/images/notification-icon.png"
-      },
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/Kids Bright Sprout.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.brightsprout.learning",
@@ -43,7 +39,8 @@
       "expo-font",
       "expo-router",
       "expo-web-browser",
-      "expo-secure-store"
+      "expo-secure-store",
+      "@react-native-community/datetimepicker"
     ],
     "scheme": "brightsprout",
     "experiments": {
@@ -61,7 +58,7 @@
     "ios": {
       "bundleIdentifier": "com.brightsprout.learning",
       "infoPlist": {
-        "NSHumanReadableCopyright": "\u00a9 2025 BrightSprout",
+        "NSHumanReadableCopyright": "© 2025 BrightSprout",
         "ITSAppUsesNonExemptEncryption": false
       }
     }
