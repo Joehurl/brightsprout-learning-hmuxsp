@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -91,6 +91,8 @@ export default function ColorPaintScreen() {
   const [errorRegions, setErrorRegions] = useState<Set<Region>>(new Set());
   const [round, setRound] = useState(1);
   const [showComplete, setShowComplete] = useState(false);
+  const [showRoundComplete, setShowRoundComplete] = useState(false);
+  const roundCompleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSelectColor = (color: { name: string; hex: string }) => {
     console.log('[ColorPaint] Color selected:', color.name, '→ letter:', COLOR_LETTER[color.name]);
@@ -117,14 +119,16 @@ export default function ColorPaintScreen() {
           await completeGame('color-paint', 2);
           setShowComplete(true);
         } else {
-          setTimeout(() => {
+          setShowRoundComplete(true);
+          roundCompleteTimerRef.current = setTimeout(() => {
+            setShowRoundComplete(false);
             const newTargets = generateTargetColors();
             setTargetColors(newTargets);
             setPaintedColors({ sky: null, sun: null, house: null, roof: null, grass: null });
             setRound(r => r + 1);
             setSelectedColor(null);
             setSelectedColorName(null);
-          }, 1000);
+          }, 5000);
         }
       }
     } else {
@@ -142,13 +146,22 @@ export default function ColorPaintScreen() {
 
   const handlePlayAgain = () => {
     console.log('[ColorPaint] Play again pressed');
+    if (roundCompleteTimerRef.current) clearTimeout(roundCompleteTimerRef.current);
     setShowComplete(false);
+    setShowRoundComplete(false);
     setTargetColors(generateTargetColors());
     setPaintedColors({ sky: null, sun: null, house: null, roof: null, grass: null });
     setSelectedColor(null);
     setSelectedColorName(null);
     setRound(1);
     setErrorRegions(new Set());
+  };
+
+  const handleClear = () => {
+    console.log('[ColorPaint] Clear pressed');
+    setPaintedColors({ sky: null, sun: null, house: null, roof: null, grass: null });
+    setSelectedColor(null);
+    setSelectedColorName(null);
   };
 
   // Resolve fill for each region
@@ -189,6 +202,9 @@ export default function ColorPaintScreen() {
           <ChevronLeft size={28} color={KIDS_COLORS.colors} />
         </AnimatedPressable>
         <Text style={styles.title}>Paint the House 🎨</Text>
+        <AnimatedPressable style={styles.clearBtn} onPress={handleClear}>
+          <Text style={styles.clearBtnText}>🗑 Clear</Text>
+        </AnimatedPressable>
         <View style={styles.scoreBadge}>
           <Text style={styles.scoreText}>{round}/3</Text>
         </View>
@@ -332,6 +348,15 @@ export default function ColorPaintScreen() {
 
       <Text style={styles.progressHint}>{paintedCount}/5 sections painted</Text>
 
+      {/* Round complete overlay */}
+      {showRoundComplete && (
+        <View style={styles.roundCompleteOverlay}>
+          <Text style={styles.roundCompleteEmoji}>🎉</Text>
+          <Text style={styles.roundCompleteTitle}>Round Complete!</Text>
+          <Text style={styles.roundCompleteSubtitle}>Get ready for the next round…</Text>
+        </View>
+      )}
+
       <GameCompleteOverlay
         visible={showComplete}
         stars={2}
@@ -384,6 +409,45 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_700Bold',
     fontSize: 14,
     color: '#FFFFFF',
+  },
+  clearBtn: {
+    backgroundColor: '#FFE5E5',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  clearBtnText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: '#CC3333',
+  },
+  roundCompleteOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 100,
+  },
+  roundCompleteEmoji: {
+    fontSize: 72,
+    marginBottom: 12,
+  },
+  roundCompleteTitle: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 36,
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  roundCompleteSubtitle: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 18,
+    color: 'rgba(255,255,255,0.85)',
+    textAlign: 'center',
   },
   instruction: {
     fontFamily: 'Nunito_600SemiBold',

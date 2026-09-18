@@ -263,14 +263,15 @@ const styles = StyleSheet.create({
   },
   answersRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 20,
     marginBottom: 24,
+    paddingHorizontal: 8,
   },
   answerBtn: {
     flex: 1,
     backgroundColor: KIDS_COLORS.surface,
-    borderRadius: 20,
-    paddingVertical: 20,
+    borderRadius: 24,
+    paddingVertical: 24,
     alignItems: 'center',
     shadowColor: KIDS_COLORS.shadow,
     shadowOffset: { width: 0, height: 3 },

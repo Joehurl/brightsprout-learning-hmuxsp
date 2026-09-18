@@ -110,7 +110,7 @@ export default function AlphabetAdventureScreen() {
 
   const bounceAnim = useRef(new Animated.Value(1)).current;
   const noteAnim = useRef(new Animated.Value(0)).current;
-  const playIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timeoutIdsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const scrollRef = useRef<ScrollView>(null);
 
   const currentLetter = LETTER_DATA[currentIndex];
@@ -156,11 +156,16 @@ export default function AlphabetAdventureScreen() {
     }
   };
 
+  const clearAllTimeouts = useCallback(() => {
+    timeoutIdsRef.current.forEach(id => clearTimeout(id));
+    timeoutIdsRef.current = [];
+  }, []);
+
   const handlePlaySong = () => {
     console.log('[AlphabetAdventure] Play ABC Song pressed, isPlaying:', isPlaying);
     if (isPlaying) {
       setIsPlaying(false);
-      if (playIntervalRef.current) clearTimeout(playIntervalRef.current);
+      clearAllTimeouts();
       return;
     }
     setIsPlaying(true);
@@ -171,46 +176,29 @@ export default function AlphabetAdventureScreen() {
       console.log('[AlphabetAdventure] Playing ABC melody via Web Audio API');
       playAbcMelodyWeb();
     } else {
-      console.log('[AlphabetAdventure] Native: simulating ABC song with haptics and letter advances');
+      console.log('[AlphabetAdventure] Native: visual letter sync (no audio)');
     }
 
-    // Advance letters in sync with melody timing
+    // Schedule exactly ONE set of 26 timeouts — one per letter, timed to ABC_MELODY_DURATIONS
+    // Letter 0 is already shown; start scheduling from t=0 for letter 0, then accumulate
     let cumulativeDelay = 0;
-    const scheduleAdvance = (idx: number) => {
-      if (idx >= 26) {
-        playIntervalRef.current = setTimeout(() => {
-          setIsPlaying(false);
-          handleGameComplete();
-        }, cumulativeDelay);
-        return;
-      }
-      const delay = cumulativeDelay;
-      playIntervalRef.current = setTimeout(() => {
-        goToLetter(idx);
-        animateNote();
-      }, delay);
-      cumulativeDelay += ABC_MELODY_DURATIONS[idx] ?? 400;
-      scheduleAdvance(idx + 1);
-    };
-
-    // Start from letter 1 (letter 0 already shown), schedule all advances
-    cumulativeDelay = ABC_MELODY_DURATIONS[0] ?? 400;
-    for (let i = 1; i < 26; i++) {
+    for (let i = 0; i < 26; i++) {
       const capturedIdx = i;
       const capturedDelay = cumulativeDelay;
-      setTimeout(() => {
-        if (capturedIdx < 26) {
-          goToLetter(capturedIdx);
-          animateNote();
-        }
+      const id = setTimeout(() => {
+        goToLetter(capturedIdx);
+        animateNote();
       }, capturedDelay);
+      timeoutIdsRef.current.push(id);
       cumulativeDelay += ABC_MELODY_DURATIONS[i] ?? 400;
     }
-    // Schedule game complete after all letters
-    setTimeout(() => {
+
+    // Final timeout to end the song
+    const endId = setTimeout(() => {
       setIsPlaying(false);
       handleGameComplete();
     }, cumulativeDelay + 200);
+    timeoutIdsRef.current.push(endId);
   };
 
   const handleGameComplete = async () => {
@@ -230,9 +218,9 @@ export default function AlphabetAdventureScreen() {
 
   useEffect(() => {
     return () => {
-      if (playIntervalRef.current) clearTimeout(playIntervalRef.current);
+      clearAllTimeouts();
     };
-  }, []);
+  }, [clearAllTimeouts]);
 
   const noteScale = noteAnim.interpolate({
     inputRange: [0, 1],
