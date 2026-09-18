@@ -31,7 +31,7 @@ const GAMES: Record<string, GameDef> = {
   'addition': { name: 'Adding Up', desc: 'Add colorful objects together', emoji: '➕', minAge: 6 },
   'shape-sorter': { name: 'Shape Sorter', desc: 'Drop shapes into the right holes', emoji: '🔷', minAge: 2 },
   'memory-match': { name: 'Memory Match', desc: 'Find matching pairs of cards', emoji: '🧠', minAge: 3 },
-  'jigsaw-puzzle': { name: 'Jigsaw Puzzle', desc: 'Drag pieces to complete the puzzle', emoji: '🧩', minAge: 2 },
+  'picture-word-match': { name: 'Picture Match', desc: 'Match pictures to words!', emoji: '🖼️', minAge: 2 },
   'color-paint': { name: 'Paint the House', desc: 'Paint each section the color shown!', emoji: '🎨', minAge: 2 },
   'drawing-canvas': { name: 'Drawing Canvas', desc: 'Draw anything you imagine!', emoji: '✏️', minAge: 2 },
   'animal-sounds': { name: 'Animal Sounds', desc: 'Guess the animal by its sound', emoji: '🦁', minAge: 2 },
@@ -48,7 +48,7 @@ interface Category {
 const CATEGORIES: Record<string, Category> = {
   letters: { label: 'Letters', emoji: '🔤', color: KIDS_COLORS.letters, bg: KIDS_COLORS.lettersMuted, games: ['alphabet-adventure', 'letter-trace', 'letter-match', 'phonics', 'spelling-bee'] },
   numbers: { label: 'Numbers', emoji: '🔢', color: KIDS_COLORS.numbers, bg: KIDS_COLORS.numbersMuted, games: ['counting', 'number-quiz', 'addition'] },
-  shapes: { label: 'Shapes', emoji: '🔷', color: KIDS_COLORS.shapes, bg: KIDS_COLORS.shapesMuted, games: ['shape-sorter', 'memory-match', 'jigsaw-puzzle'] },
+  shapes: { label: 'Shapes', emoji: '🔷', color: KIDS_COLORS.shapes, bg: KIDS_COLORS.shapesMuted, games: ['shape-sorter', 'memory-match', 'picture-word-match'] },
   colors: { label: 'Colors', emoji: '🎨', color: KIDS_COLORS.colors, bg: KIDS_COLORS.colorsMuted, games: ['color-paint', 'drawing-canvas'] },
   animals: { label: 'Animals', emoji: '🦁', color: KIDS_COLORS.animals, bg: KIDS_COLORS.animalsMuted, games: ['animal-sounds'] },
 };
