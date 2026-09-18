@@ -30,7 +30,6 @@ const PIECES = [
 ];
 
 const GRID_COLS = 3;
-const GRID_ROWS = 2;
 const PIECE_SIZE = (SCREEN_WIDTH - 48 - 16) / GRID_COLS;
 const SNAP_THRESHOLD = 60;
 
@@ -58,9 +57,16 @@ export default function JigsawPuzzleScreen() {
   const bounceAnims = useRef(PIECES.map(() => new Animated.Value(1))).current;
 
   const dropZoneLayouts = useRef<Record<number, { x: number; y: number }>>({});
-  const pieceLayouts = useRef<Record<number, { x: number; y: number }>>({});
+  // Original (pre-translation) layout measured ONCE per piece — never updated after first measure
+  const originalPieceLayouts = useRef<Record<number, { x: number; y: number }>>({});
+  const hasMeasured = useRef<Record<number, boolean>>({});
+  // Locked snap offsets stored at the moment of correct placement
+  const lockedOffsets = useRef<Record<number, { x: number; y: number }>>({});
 
   const handleDrop = useCallback(async (pieceId: number, pageX: number, pageY: number) => {
+    // Already placed — ignore
+    if (lockedOffsets.current[pieceId]) return;
+
     const dropZone = dropZoneLayouts.current[pieceId];
     if (!dropZone) {
       Animated.spring(positions[pieceId], { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
@@ -74,18 +80,19 @@ export default function JigsawPuzzleScreen() {
     console.log('[JigsawPuzzle] Piece dropped:', PIECES[pieceId].emoji, 'distance:', dist.toFixed(0));
 
     if (dist < SNAP_THRESHOLD) {
-      // Snap to correct position
-      const pieceLayout = pieceLayouts.current[pieceId];
-      if (pieceLayout) {
-        const snapX = dropZone.x - pieceLayout.x;
-        const snapY = dropZone.y - pieceLayout.y;
-        Animated.spring(positions[pieceId], {
-          toValue: { x: snapX, y: snapY },
-          useNativeDriver: false,
-          damping: 8,
-          stiffness: 200,
-        }).start();
-      }
+      const origin = originalPieceLayouts.current[pieceId];
+      const snapX = origin ? dropZone.x - origin.x : 0;
+      const snapY = origin ? dropZone.y - origin.y : 0;
+
+      // Lock immediately so no subsequent re-render can move this piece
+      lockedOffsets.current[pieceId] = { x: snapX, y: snapY };
+
+      Animated.spring(positions[pieceId], {
+        toValue: { x: snapX, y: snapY },
+        useNativeDriver: false,
+        damping: 8,
+        stiffness: 200,
+      }).start();
 
       // Bounce animation
       Animated.sequence([
@@ -114,8 +121,8 @@ export default function JigsawPuzzleScreen() {
 
   const createPanResponder = useCallback((pieceId: number) => {
     return PanResponder.create({
-      onStartShouldSetPanResponder: () => !snapped.has(pieceId),
-      onMoveShouldSetPanResponder: () => !snapped.has(pieceId),
+      onStartShouldSetPanResponder: () => !lockedOffsets.current[pieceId],
+      onMoveShouldSetPanResponder: () => !lockedOffsets.current[pieceId],
       onPanResponderGrant: () => {
         console.log('[JigsawPuzzle] Drag started:', PIECES[pieceId].emoji);
         positions[pieceId].setOffset({
@@ -134,7 +141,7 @@ export default function JigsawPuzzleScreen() {
         handleDrop(pieceId, pageX, pageY);
       },
     });
-  }, [snapped, positions, handleDrop]);
+  }, [positions, handleDrop]);
 
   const panResponders = useRef(PIECES.map(p => createPanResponder(p.id)));
 
@@ -146,6 +153,9 @@ export default function JigsawPuzzleScreen() {
     console.log('[JigsawPuzzle] Play again pressed');
     setShowComplete(false);
     setSnapped(new Set());
+    lockedOffsets.current = {};
+    hasMeasured.current = {};
+    originalPieceLayouts.current = {};
     positions.forEach(p => p.setValue({ x: 0, y: 0 }));
     bounceAnims.forEach(a => a.setValue(1));
   };
@@ -173,7 +183,7 @@ export default function JigsawPuzzleScreen() {
         <Mascot size={56} animate={false} expression="happy" />
       </View>
 
-      <Text style={styles.instruction}>Drag each piece to its spot!</Text>
+      <Text style={styles.instruction}>Match each piece to its letter!</Text>
 
       {/* Progress */}
       <View style={styles.progressRow}>
@@ -232,23 +242,28 @@ export default function JigsawPuzzleScreen() {
                     { translateY: positions[pieceId].y },
                     { scale: bounceAnims[pieceId] },
                   ],
-                  opacity: isSnapped ? 0.3 : 1,
+                  opacity: 1,
                   zIndex: isSnapped ? 0 : 10,
+                  pointerEvents: isSnapped ? 'none' : 'auto',
                 },
               ]}
               ref={(ref) => {
-                if (ref) {
+                if (ref && !hasMeasured.current[pieceId]) {
                   (ref as any).measure((_x: number, _y: number, width: number, height: number, pageX: number, pageY: number) => {
-                    pieceLayouts.current[pieceId] = {
-                      x: pageX + width / 2,
-                      y: pageY + height / 2,
-                    };
+                    if (!hasMeasured.current[pieceId]) {
+                      hasMeasured.current[pieceId] = true;
+                      originalPieceLayouts.current[pieceId] = {
+                        x: pageX + width / 2,
+                        y: pageY + height / 2,
+                      };
+                    }
                   });
                 }
               }}
               {...panResponders.current[pieceId].panHandlers}
             >
               <Text style={styles.pieceEmoji}>{piece.emoji}</Text>
+              <Text style={styles.pieceLabel}>{piece.label[0]}</Text>
             </Animated.View>
           );
         })}
@@ -402,6 +417,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.8)',
   },
   pieceEmoji: {
-    fontSize: 40,
+    fontSize: 36,
+  },
+  pieceLabel: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 18,
+    color: KIDS_COLORS.shapes,
+    marginTop: 2,
   },
 });

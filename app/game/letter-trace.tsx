@@ -45,7 +45,6 @@ export default function LetterTraceScreen() {
   const [showComplete, setShowComplete] = useState(false);
 
   const canvasRef = useRef<View>(null);
-  const canvasOffset = useRef({ x: 0, y: 0 });
   const currentPathRef = useRef<Point[]>([]);
 
   const currentLetter = LETTERS[letterIndex % LETTERS.length];
@@ -131,24 +130,24 @@ export default function LetterTraceScreen() {
 
       {/* Canvas */}
       <View style={styles.canvasContainer}>
+        {/* Large letter label above canvas for visibility */}
+        <Text style={styles.letterHint}>{currentLetter}</Text>
         <View
           ref={canvasRef}
           style={[styles.canvas, { width: CANVAS_SIZE, height: CANVAS_SIZE }]}
           {...panResponder.panHandlers}
         >
           <Svg width={CANVAS_SIZE} height={CANVAS_SIZE} style={StyleSheet.absoluteFill}>
-            {/* Guide letter */}
+            {/* Guide letter — filled with low opacity for clear visibility */}
             <SvgText
               x={CANVAS_SIZE / 2}
               y={CANVAS_SIZE * 0.78}
               fontSize={CANVAS_SIZE * 0.85}
               fontWeight="bold"
               textAnchor="middle"
-              fill="none"
-              stroke={KIDS_COLORS.letters}
-              strokeWidth="3"
-              strokeDasharray="8,6"
-              opacity={0.35}
+              fill={KIDS_COLORS.letters}
+              stroke="none"
+              opacity={0.12}
             >
               {currentLetter}
             </SvgText>
@@ -243,15 +242,24 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: KIDS_COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 8,
   },
   canvasContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  letterHint: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 72,
+    color: KIDS_COLORS.letters,
+    opacity: 0.25,
+    position: 'absolute',
+    top: -20,
+    zIndex: 0,
+  },
   canvas: {
-    backgroundColor: KIDS_COLORS.surface,
+    backgroundColor: '#FFFFFF',
     borderRadius: 24,
     shadowColor: KIDS_COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },

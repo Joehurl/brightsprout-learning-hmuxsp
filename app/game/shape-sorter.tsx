@@ -93,11 +93,16 @@ export default function ShapeSorterScreen() {
   ).current;
 
   const holeLayouts = useRef<Record<string, { x: number; y: number }>>({});
-  const shapeLayouts = useRef<Record<string, { x: number; y: number }>>({});
-  // Stores the original (pre-translation) layout measured once on mount — never updated after first measure
+  // Original (pre-translation) layout measured ONCE per shape on mount — never updated after first measure
   const originalShapeLayouts = useRef<Record<string, { x: number; y: number }>>({});
+  const hasMeasured = useRef<Record<string, boolean>>({});
+  // Locked snap offsets stored at the moment of correct placement — used as source of truth
+  const lockedOffsets = useRef<Record<string, { x: number; y: number }>>({});
 
   const handleDrop = useCallback(async (shapeId: string, shapeIndex: number, finalX: number, finalY: number) => {
+    // Already placed — ignore
+    if (lockedOffsets.current[shapeId]) return;
+
     const holeLayout = holeLayouts.current[shapeId];
     if (!holeLayout) {
       Animated.spring(positions[shapeIndex], { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
@@ -108,18 +113,25 @@ export default function ShapeSorterScreen() {
     const dy = Math.abs(finalY - holeLayout.y);
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    console.log('[ShapeSorter] Shape dropped:', shapeId, 'distance to hole:', dist);
+    console.log('[ShapeSorter] Shape dropped:', shapeId, 'distance to hole:', dist.toFixed(0));
 
     if (dist < 80) {
-      // Snap to hole — use original (pre-translation) layout so already-snapped shapes don't drift
-      const snapX = holeLayout.x - (originalShapeLayouts.current[shapeId]?.x ?? shapeLayouts.current[shapeId]?.x ?? 0);
-      const snapY = holeLayout.y - (originalShapeLayouts.current[shapeId]?.y ?? shapeLayouts.current[shapeId]?.y ?? 0);
+      // Compute snap using original (pre-translation) layout so drift never accumulates
+      const origin = originalShapeLayouts.current[shapeId];
+      const snapX = origin ? holeLayout.x - origin.x : 0;
+      const snapY = origin ? holeLayout.y - origin.y : 0;
+
+      // Store locked offset immediately so subsequent re-renders never move this shape
+      lockedOffsets.current[shapeId] = { x: snapX, y: snapY };
+
       Animated.spring(positions[shapeIndex], {
         toValue: { x: snapX, y: snapY },
         useNativeDriver: false,
         damping: 10,
         stiffness: 200,
       }).start();
+
+      console.log('[ShapeSorter] Shape snapped:', shapeId, 'offset:', snapX.toFixed(0), snapY.toFixed(0));
 
       const newSorted = new Set([...sorted, shapeId]);
       setSorted(newSorted);
@@ -133,6 +145,9 @@ export default function ShapeSorterScreen() {
           setTimeout(() => {
             setRound(nextRound);
             setSorted(new Set());
+            lockedOffsets.current = {};
+            hasMeasured.current = {};
+            originalShapeLayouts.current = {};
             positions.forEach(p => p.setValue({ x: 0, y: 0 }));
           }, 800);
         }
@@ -144,8 +159,8 @@ export default function ShapeSorterScreen() {
 
   const createPanResponder = useCallback((shapeId: string, shapeIndex: number) => {
     return PanResponder.create({
-      onStartShouldSetPanResponder: () => !sorted.has(shapeId),
-      onMoveShouldSetPanResponder: () => !sorted.has(shapeId),
+      onStartShouldSetPanResponder: () => !lockedOffsets.current[shapeId],
+      onMoveShouldSetPanResponder: () => !lockedOffsets.current[shapeId],
       onPanResponderGrant: () => {
         console.log('[ShapeSorter] Drag started:', shapeId);
         positions[shapeIndex].setOffset({
@@ -164,7 +179,7 @@ export default function ShapeSorterScreen() {
         handleDrop(shapeId, shapeIndex, pageX, pageY);
       },
     });
-  }, [sorted, positions, handleDrop]);
+  }, [positions, handleDrop]);
 
   const panResponders = useRef(
     SHAPES.map((shape, i) => createPanResponder(shape.id, i))
@@ -180,6 +195,9 @@ export default function ShapeSorterScreen() {
     setShowComplete(false);
     setRound(0);
     setSorted(new Set());
+    lockedOffsets.current = {};
+    hasMeasured.current = {};
+    originalShapeLayouts.current = {};
     positions.forEach(p => p.setValue({ x: 0, y: 0 }));
   };
 
@@ -211,7 +229,7 @@ export default function ShapeSorterScreen() {
             style={styles.hole}
             ref={(ref) => {
               if (ref) {
-                ref.measure((_x, _y, width, height, pageX, pageY) => {
+                (ref as any).measure((_x: number, _y: number, width: number, height: number, pageX: number, pageY: number) => {
                   holeLayouts.current[shape.id] = {
                     x: pageX + width / 2,
                     y: pageY + height / 2,
@@ -230,36 +248,42 @@ export default function ShapeSorterScreen() {
 
       {/* Draggable shapes */}
       <View style={styles.shapesRow}>
-        {SHAPES.map((shape, i) => (
-          <Animated.View
-            key={shape.id}
-            style={[
-              styles.draggableShape,
-              {
-                transform: [
-                  { translateX: positions[i].x },
-                  { translateY: positions[i].y },
-                ],
-                opacity: sorted.has(shape.id) ? 0.3 : 1,
-              },
-            ]}
-            ref={(ref) => {
-              if (ref) {
-                (ref as any).measure((_x: number, _y: number, width: number, height: number, pageX: number, pageY: number) => {
-                  const center = { x: pageX + width / 2, y: pageY + height / 2 };
-                  shapeLayouts.current[shape.id] = center;
-                  // Only store original layout once — never overwrite after first measure
-                  if (!originalShapeLayouts.current[shape.id]) {
-                    originalShapeLayouts.current[shape.id] = center;
-                  }
-                });
-              }
-            }}
-            {...panResponders.current[i].panHandlers}
-          >
-            <ShapeSvg id={shape.id} color={shape.color} size={SHAPE_SIZE} filled />
-          </Animated.View>
-        ))}
+        {SHAPES.map((shape, i) => {
+          const isLocked = !!lockedOffsets.current[shape.id];
+          return (
+            <Animated.View
+              key={shape.id}
+              style={[
+                styles.draggableShape,
+                {
+                  transform: [
+                    { translateX: positions[i].x },
+                    { translateY: positions[i].y },
+                  ],
+                  opacity: 1,
+                  pointerEvents: isLocked ? 'none' : 'auto',
+                },
+              ]}
+              ref={(ref) => {
+                if (ref && !hasMeasured.current[shape.id]) {
+                  (ref as any).measure((_x: number, _y: number, width: number, height: number, pageX: number, pageY: number) => {
+                    if (!hasMeasured.current[shape.id]) {
+                      hasMeasured.current[shape.id] = true;
+                      originalShapeLayouts.current[shape.id] = {
+                        x: pageX + width / 2,
+                        y: pageY + height / 2,
+                      };
+                      console.log('[ShapeSorter] Measured origin for', shape.id, pageX + width / 2, pageY + height / 2);
+                    }
+                  });
+                }
+              }}
+              {...panResponders.current[i].panHandlers}
+            >
+              <ShapeSvg id={shape.id} color={shape.color} size={SHAPE_SIZE} filled />
+            </Animated.View>
+          );
+        })}
       </View>
 
       <GameCompleteOverlay

@@ -6,6 +6,7 @@ import {
   ScrollView,
   Animated,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -54,6 +55,49 @@ const LETTER_COLORS = [
   KIDS_COLORS.colors, KIDS_COLORS.animals, KIDS_COLORS.music,
 ];
 
+// ABC song melody: frequencies (Hz) per letter A-Z
+// Standard ABC song in C major
+const ABC_MELODY_FREQS = [
+  261, 261, 392, 392, 440, 440, 392, // A B C D E F G (G is half note)
+  349, 349, 330, 330, 294, 294, 261, // H I J K L M N (N is half note)
+  392, 392, 349, 349, 330, 330, 294, // O P Q R S T U (U is half note)
+  261, 392, 349, 330, 294, 261,       // V W X Y Z (end)
+];
+
+// Duration in ms per note (quarter=400ms, half=800ms)
+const ABC_MELODY_DURATIONS = [
+  400, 400, 400, 400, 400, 400, 800, // A-G
+  400, 400, 400, 400, 400, 400, 800, // H-N
+  400, 400, 400, 400, 400, 400, 800, // O-U
+  400, 400, 400, 400, 400, 800,       // V-Z
+];
+
+function playAbcMelodyWeb() {
+  try {
+    const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    let time = ctx.currentTime;
+
+    ABC_MELODY_FREQS.forEach((freq, i) => {
+      const dur = (ABC_MELODY_DURATIONS[i] ?? 400) / 1000;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, time);
+      gain.gain.setValueAtTime(0.35, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + dur * 0.9);
+      osc.start(time);
+      osc.stop(time + dur);
+      time += dur;
+    });
+  } catch (e) {
+    console.log('[AlphabetAdventure] Web Audio API error:', e);
+  }
+}
+
 export default function AlphabetAdventureScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -65,6 +109,7 @@ export default function AlphabetAdventureScreen() {
   const [showComplete, setShowComplete] = useState(false);
 
   const bounceAnim = useRef(new Animated.Value(1)).current;
+  const noteAnim = useRef(new Animated.Value(0)).current;
   const playIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -80,6 +125,14 @@ export default function AlphabetAdventureScreen() {
       stiffness: 200,
     }).start();
   }, [bounceAnim]);
+
+  const animateNote = useCallback(() => {
+    noteAnim.setValue(0);
+    Animated.sequence([
+      Animated.timing(noteAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.timing(noteAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+    ]).start();
+  }, [noteAnim]);
 
   const goToLetter = useCallback((index: number) => {
     setCurrentIndex(index);
@@ -104,7 +157,7 @@ export default function AlphabetAdventureScreen() {
   };
 
   const handlePlaySong = () => {
-    console.log('[AlphabetAdventure] Play ABC Song pressed');
+    console.log('[AlphabetAdventure] Play ABC Song pressed, isPlaying:', isPlaying);
     if (isPlaying) {
       setIsPlaying(false);
       if (playIntervalRef.current) clearTimeout(playIntervalRef.current);
@@ -113,16 +166,51 @@ export default function AlphabetAdventureScreen() {
     setIsPlaying(true);
     goToLetter(0);
 
-    const advance = (idx: number) => {
+    // On web: play the actual ABC melody via Web Audio API
+    if (Platform.OS === 'web') {
+      console.log('[AlphabetAdventure] Playing ABC melody via Web Audio API');
+      playAbcMelodyWeb();
+    } else {
+      console.log('[AlphabetAdventure] Native: simulating ABC song with haptics and letter advances');
+    }
+
+    // Advance letters in sync with melody timing
+    let cumulativeDelay = 0;
+    const scheduleAdvance = (idx: number) => {
       if (idx >= 26) {
-        setIsPlaying(false);
-        handleGameComplete();
+        playIntervalRef.current = setTimeout(() => {
+          setIsPlaying(false);
+          handleGameComplete();
+        }, cumulativeDelay);
         return;
       }
-      goToLetter(idx);
-      playIntervalRef.current = setTimeout(() => advance(idx + 1), 1500);
+      const delay = cumulativeDelay;
+      playIntervalRef.current = setTimeout(() => {
+        goToLetter(idx);
+        animateNote();
+      }, delay);
+      cumulativeDelay += ABC_MELODY_DURATIONS[idx] ?? 400;
+      scheduleAdvance(idx + 1);
     };
-    playIntervalRef.current = setTimeout(() => advance(1), 1500);
+
+    // Start from letter 1 (letter 0 already shown), schedule all advances
+    cumulativeDelay = ABC_MELODY_DURATIONS[0] ?? 400;
+    for (let i = 1; i < 26; i++) {
+      const capturedIdx = i;
+      const capturedDelay = cumulativeDelay;
+      setTimeout(() => {
+        if (capturedIdx < 26) {
+          goToLetter(capturedIdx);
+          animateNote();
+        }
+      }, capturedDelay);
+      cumulativeDelay += ABC_MELODY_DURATIONS[i] ?? 400;
+    }
+    // Schedule game complete after all letters
+    setTimeout(() => {
+      setIsPlaying(false);
+      handleGameComplete();
+    }, cumulativeDelay + 200);
   };
 
   const handleGameComplete = async () => {
@@ -146,6 +234,18 @@ export default function AlphabetAdventureScreen() {
     };
   }, []);
 
+  const noteScale = noteAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.4],
+  });
+
+  const isOnWeb = Platform.OS === 'web';
+  const songButtonLabel = isPlaying
+    ? '⏸ Stop Song'
+    : isOnWeb
+    ? '▶ Play ABC Song 🎵'
+    : '▶ Play ABC Song ♪';
+
   return (
     <LinearGradient colors={['#FF6B6B', '#FF8E53']} style={styles.container}>
       <View style={[styles.inner, { paddingTop: insets.top + 12 }]}>
@@ -166,12 +266,24 @@ export default function AlphabetAdventureScreen() {
 
         {/* Letter Display */}
         <View style={styles.letterDisplay}>
-          <Animated.View style={[styles.letterCircle, { transform: [{ scale: bounceAnim }] }]}>
-            <Text style={[styles.letterText, { color: letterColor }]}>{currentLetter.letter}</Text>
-          </Animated.View>
+          <View style={styles.letterCircleWrapper}>
+            <Animated.View style={[styles.letterCircle, { transform: [{ scale: bounceAnim }] }]}>
+              <Text style={[styles.letterText, { color: letterColor }]}>{currentLetter.letter}</Text>
+            </Animated.View>
+            {isPlaying && (
+              <Animated.Text style={[styles.musicNote, { transform: [{ scale: noteScale }] }]}>
+                ♪
+              </Animated.Text>
+            )}
+          </View>
           <Text style={styles.wordText}>
             {currentLetter.letter} is for {currentLetter.word} {currentLetter.emoji}
           </Text>
+          {isPlaying && (
+            <Text style={styles.playingHint}>
+              {isOnWeb ? '🎵 Playing ABC Song!' : '♪ Watch the letters dance!'}
+            </Text>
+          )}
         </View>
 
         {/* Navigation */}
@@ -226,9 +338,9 @@ export default function AlphabetAdventureScreen() {
         </ScrollView>
 
         {/* Play button */}
-        <AnimatedPressable style={styles.playBtn} onPress={handlePlaySong}>
-          <Text style={styles.playBtnText}>
-            {isPlaying ? '⏸ Stop Song' : '▶ Play ABC Song'}
+        <AnimatedPressable style={[styles.playBtn, isPlaying && styles.playBtnActive]} onPress={handlePlaySong}>
+          <Text style={[styles.playBtnText, isPlaying && styles.playBtnTextActive]}>
+            {songButtonLabel}
           </Text>
         </AnimatedPressable>
       </View>
@@ -277,6 +389,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
+  letterCircleWrapper: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
   letterCircle: {
     width: 160,
     height: 160,
@@ -289,18 +407,31 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 16,
     elevation: 8,
-    marginBottom: 24,
   },
   letterText: {
     fontFamily: 'Nunito_800ExtraBold',
     fontSize: 96,
     lineHeight: 110,
   },
+  musicNote: {
+    position: 'absolute',
+    top: -10,
+    right: -10,
+    fontSize: 32,
+    color: '#FFFFFF',
+  },
   wordText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 26,
     color: '#FFFFFF',
     textAlign: 'center',
+  },
+  playingHint: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.85)',
+    textAlign: 'center',
+    marginTop: 8,
   },
   navRow: {
     flexDirection: 'row',
@@ -370,9 +501,15 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  playBtnActive: {
+    backgroundColor: 'rgba(255,255,255,0.85)',
+  },
   playBtnText: {
     fontFamily: 'Nunito_800ExtraBold',
     fontSize: 20,
     color: '#FF6B6B',
+  },
+  playBtnTextActive: {
+    color: '#FF4444',
   },
 });

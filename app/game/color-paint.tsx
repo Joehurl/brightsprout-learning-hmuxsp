@@ -14,15 +14,16 @@ import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { GameCompleteOverlay } from '@/components/GameCompleteOverlay';
 import { playSound } from '@/utils/sounds';
 
+// All unique first letters — no duplicates
 const PALETTE = [
-  { name: 'Red', hex: '#FF4444' },
-  { name: 'Blue', hex: '#4488FF' },
-  { name: 'Yellow', hex: '#FFD700' },
-  { name: 'Green', hex: '#44CC44' },
-  { name: 'Orange', hex: '#FF8C00' },
-  { name: 'Purple', hex: '#9944CC' },
-  { name: 'Pink', hex: '#FF69B4' },
-  { name: 'White', hex: '#FFFFFF' },
+  { name: 'Red', hex: '#FF4444' },      // R
+  { name: 'Blue', hex: '#4488FF' },     // B
+  { name: 'Yellow', hex: '#FFD700' },   // Y
+  { name: 'Green', hex: '#44CC44' },    // G
+  { name: 'Orange', hex: '#FF8C00' },   // O
+  { name: 'Purple', hex: '#9944CC' },   // P
+  { name: 'Teal', hex: '#00BCD4' },     // T
+  { name: 'White', hex: '#F5F5F5' },    // W
 ];
 
 const COLOR_LETTER: Record<string, string> = {
@@ -32,7 +33,7 @@ const COLOR_LETTER: Record<string, string> = {
   Green: 'G',
   Orange: 'O',
   Purple: 'P',
-  Pink: 'K',
+  Teal: 'T',
   White: 'W',
 };
 
@@ -92,7 +93,7 @@ export default function ColorPaintScreen() {
   const [showComplete, setShowComplete] = useState(false);
 
   const handleSelectColor = (color: { name: string; hex: string }) => {
-    console.log('[ColorPaint] Color selected:', color.name);
+    console.log('[ColorPaint] Color selected:', color.name, '→ letter:', COLOR_LETTER[color.name]);
     playSound('pop');
     setSelectedColor(color.hex);
     setSelectedColorName(color.name);
@@ -170,9 +171,10 @@ export default function ColorPaintScreen() {
 
   const paintedCount = REGIONS.filter(r => paintedColors[r] !== null).length;
 
+  const selectedLetter = selectedColorName ? (COLOR_LETTER[selectedColorName] ?? selectedColorName[0]) : null;
   const instructionText = selectedColorName
-    ? `Tap the section for "${COLOR_LETTER[selectedColorName] ?? selectedColorName[0]}"`
-    : 'Pick a color, then tap the matching letter!';
+    ? `Tap the section showing "${selectedLetter}"`
+    : 'Pick a color, then tap the section showing its first letter!';
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
@@ -317,9 +319,14 @@ export default function ColorPaintScreen() {
               styles.colorCircle,
               { backgroundColor: color.hex },
               selectedColor === color.hex && styles.colorCircleSelected,
+              color.name === 'White' && styles.colorCircleWhite,
             ]}
             onPress={() => handleSelectColor(color)}
-          />
+          >
+            <Text style={[styles.colorLetter, color.name === 'White' && styles.colorLetterDark]}>
+              {COLOR_LETTER[color.name]}
+            </Text>
+          </AnimatedPressable>
         ))}
       </View>
 
@@ -380,7 +387,7 @@ const styles = StyleSheet.create({
   },
   instruction: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 16,
+    fontSize: 15,
     color: KIDS_COLORS.textSecondary,
     textAlign: 'center',
     marginBottom: 8,
@@ -413,10 +420,23 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 4,
     elevation: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   colorCircleSelected: {
     borderColor: KIDS_COLORS.text,
     transform: [{ scale: 1.2 }],
+  },
+  colorCircleWhite: {
+    borderColor: KIDS_COLORS.border,
+  },
+  colorLetter: {
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 13,
+    color: '#FFFFFF',
+  },
+  colorLetterDark: {
+    color: KIDS_COLORS.textSecondary,
   },
   progressHint: {
     fontFamily: 'Nunito_400Regular',
