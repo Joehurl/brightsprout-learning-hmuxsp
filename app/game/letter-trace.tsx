@@ -66,12 +66,13 @@ export default function LetterTraceScreen() {
         setCurrentPath([...currentPathRef.current]);
       },
       onPanResponderRelease: () => {
-        console.log('[LetterTrace] Drawing stroke completed, points:', currentPathRef.current.length);
-        if (currentPathRef.current.length > 0) {
-          setPaths(p => [...p, currentPathRef.current]);
-        }
+        const completed = [...currentPathRef.current];
+        console.log('[LetterTrace] Drawing stroke completed, points:', completed.length);
         currentPathRef.current = [];
         setCurrentPath([]);
+        if (completed.length > 1) {
+          setPaths(prev => [...prev, completed]);
+        }
       },
     })
   ).current;
@@ -105,7 +106,7 @@ export default function LetterTraceScreen() {
     setCurrentPath([]);
   };
 
-  const allPaths = [...paths, currentPath];
+  const allPaths = currentPath.length > 0 ? [...paths, currentPath] : paths;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
