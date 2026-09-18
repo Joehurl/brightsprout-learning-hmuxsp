@@ -79,7 +79,6 @@ function getPieceClipPath(col: number, row: number, size: number): string {
     d += `L ${S} 0 `;
   } else {
     const mid = S / 2;
-    const dir = topTab ? -1 : 1; // tab protrudes up (negative y), notch goes down (positive y)
     d += `L ${mid - R} 0 `;
     d += `A ${R} ${R} 0 0 ${topTab ? 0 : 1} ${mid + R} 0 `;
     d += `L ${S} 0 `;
@@ -91,7 +90,6 @@ function getPieceClipPath(col: number, row: number, size: number): string {
     d += `L ${S} ${S} `;
   } else {
     const mid = S / 2;
-    const dir = rightTab ? 1 : -1;
     d += `L ${S} ${mid - R} `;
     d += `A ${R} ${R} 0 0 ${rightTab ? 1 : 0} ${S} ${mid + R} `;
     d += `L ${S} ${S} `;
@@ -186,8 +184,6 @@ interface PieceSvgProps {
 
 function PieceSvg({ col, row, size, label, isDashed }: PieceSvgProps) {
   const clipId = `clip-${col}-${row}-${size}`;
-  const scaleX = size / 100;
-  const scaleY = size / 100;
   const clipPath = getPieceClipPath(col, row, size);
 
   if (isDashed) {
@@ -273,6 +269,12 @@ export default function JigsawPuzzleScreen() {
   const [newBadges, setNewBadges] = useState<string[]>([]);
   const [showBadges, setShowBadges] = useState(false);
 
+  // Drag overlay state
+  const [draggingPieceId, setDraggingPieceId] = useState<number | null>(null);
+  const draggingPieceIdRef = useRef<number | null>(null);
+  const dragOverlayPos = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const dragStartPagePos = useRef<{ x: number; y: number } | null>(null);
+
   const positions = useRef(PIECES.map(() => new Animated.ValueXY({ x: 0, y: 0 }))).current;
   const bounceAnims = useRef(PIECES.map(() => new Animated.Value(1))).current;
 
@@ -348,17 +350,39 @@ export default function JigsawPuzzleScreen() {
         onMoveShouldSetPanResponder: () => !lockedOffsets.current[piece.id],
         onPanResponderGrant: () => {
           console.log('[JigsawPuzzle] Drag started:', piece.name);
+          // Record start position for overlay
+          const origin = originalPieceLayouts.current[piece.id];
+          const startX = origin ? origin.x - TRAY_PIECE_SIZE / 2 : 0;
+          const startY = origin ? origin.y - TRAY_PIECE_SIZE / 2 : 0;
+          dragStartPagePos.current = { x: startX, y: startY };
+          dragOverlayPos.setValue({ x: startX, y: startY });
+          draggingPieceIdRef.current = piece.id;
+          setDraggingPieceId(piece.id);
+
           positions[piece.id].setOffset({
             x: (positions[piece.id].x as any)._value,
             y: (positions[piece.id].y as any)._value,
           });
           positions[piece.id].setValue({ x: 0, y: 0 });
         },
-        onPanResponderMove: Animated.event(
-          [null, { dx: positions[piece.id].x, dy: positions[piece.id].y }],
-          { useNativeDriver: false }
-        ),
+        onPanResponderMove: (_, gestureState) => {
+          // Update the underlying position (for snap logic)
+          const xVal = positions[piece.id].x as any;
+          const yVal = positions[piece.id].y as any;
+          xVal.setValue(gestureState.dx);
+          yVal.setValue(gestureState.dy);
+
+          // Update overlay position in screen space
+          if (dragStartPagePos.current) {
+            dragOverlayPos.setValue({
+              x: dragStartPagePos.current.x + gestureState.dx,
+              y: dragStartPagePos.current.y + gestureState.dy,
+            });
+          }
+        },
         onPanResponderRelease: (evt) => {
+          draggingPieceIdRef.current = null;
+          setDraggingPieceId(null);
           positions[piece.id].flattenOffset();
           const { pageX, pageY } = evt.nativeEvent;
           handleDrop(piece.id, pageX, pageY);
@@ -387,6 +411,9 @@ export default function JigsawPuzzleScreen() {
 
   const snappedSize = snapped.size;
   const progressPct = `${(snappedSize / PIECE_COUNT) * 100}%` as any;
+
+  // Resolve the piece being dragged for the overlay
+  const draggingPiece = draggingPieceId !== null ? PIECES[draggingPieceId] : null;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
@@ -477,6 +504,8 @@ export default function JigsawPuzzleScreen() {
         {shuffledOrder.map(pieceId => {
           const piece = PIECES[pieceId];
           const isSnapped = snapped.has(pieceId);
+          const isDragging = draggingPieceId === pieceId;
+          const pieceOpacity = isSnapped ? 0.3 : isDragging ? 0 : 1;
           return (
             <Animated.View
               key={pieceId}
@@ -489,7 +518,7 @@ export default function JigsawPuzzleScreen() {
                     { scale: bounceAnims[pieceId] },
                   ],
                   zIndex: isSnapped ? 0 : 10,
-                  opacity: isSnapped ? 0.3 : 1,
+                  opacity: pieceOpacity,
                 },
               ]}
               pointerEvents={isSnapped ? 'none' : 'auto'}
@@ -517,6 +546,24 @@ export default function JigsawPuzzleScreen() {
           );
         })}
       </ScrollView>
+
+      {/* Drag overlay — renders above everything including the drop grid */}
+      {draggingPiece !== null && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.dragOverlay,
+            {
+              transform: [
+                { translateX: dragOverlayPos.x },
+                { translateY: dragOverlayPos.y },
+              ],
+            },
+          ]}
+        >
+          <PieceSvg col={draggingPiece.col} row={draggingPiece.row} size={TRAY_PIECE_SIZE} label={draggingPiece.label} />
+        </Animated.View>
+      )}
 
       <GameCompleteOverlay
         visible={showComplete}
@@ -547,6 +594,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: KIDS_COLORS.shapesMuted,
     paddingHorizontal: 24,
+    overflow: 'visible',
   },
   header: {
     flexDirection: 'row',
@@ -641,5 +689,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 8,
     elevation: 4,
+  },
+  dragOverlay: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: TRAY_PIECE_SIZE,
+    height: TRAY_PIECE_SIZE,
+    zIndex: 9999,
+    elevation: 9999,
+    shadowColor: KIDS_COLORS.shadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
   },
 });

@@ -18,12 +18,27 @@ import { GameCompleteOverlay } from '@/components/GameCompleteOverlay';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const SHAPES = [
+const SHAPE_POOL = [
   { id: 'circle', label: 'Circle', color: '#4ECDC4', emoji: '🔵' },
   { id: 'square', label: 'Square', color: '#FF6B6B', emoji: '🟥' },
   { id: 'triangle', label: 'Triangle', color: '#F59E0B', emoji: '🔺' },
   { id: 'star', label: 'Star', color: '#A78BFA', emoji: '⭐' },
+  { id: 'diamond', label: 'Diamond', color: '#F472B6', emoji: '💎' },
+  { id: 'hexagon', label: 'Hexagon', color: '#34D399', emoji: '⬡' },
 ];
+
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function generateRoundShapes() {
+  return shuffleArray(SHAPE_POOL).slice(0, 4);
+}
 
 const HOLE_SIZE = 70;
 const SHAPE_SIZE = 60;
@@ -76,6 +91,28 @@ function ShapeSvg({ id, color, size, filled }: { id: string; color: string; size
       </Svg>
     );
   }
+  if (id === 'diamond') {
+    const pts = `${size / 2},4 ${size - 4},${size / 2} ${size / 2},${size - 4} 4,${size / 2}`;
+    return (
+      <Svg width={size} height={size}>
+        <Polygon points={pts} fill={fill} stroke={stroke} strokeWidth={strokeWidth} strokeDasharray={filled ? undefined : '6,4'} />
+      </Svg>
+    );
+  }
+  if (id === 'hexagon') {
+    const cx = size / 2;
+    const cy = size / 2;
+    const r = size / 2 - 4;
+    const pts = Array.from({ length: 6 }, (_, i) => {
+      const a = (Math.PI / 180) * (60 * i - 30);
+      return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`;
+    }).join(' ');
+    return (
+      <Svg width={size} height={size}>
+        <Polygon points={pts} fill={fill} stroke={stroke} strokeWidth={strokeWidth} strokeDasharray={filled ? undefined : '6,4'} />
+      </Svg>
+    );
+  }
   return null;
 }
 
@@ -87,9 +124,10 @@ export default function ShapeSorterScreen() {
   const [round, setRound] = useState(0);
   const [sorted, setSorted] = useState<Set<string>>(new Set());
   const [showComplete, setShowComplete] = useState(false);
+  const [roundShapes, setRoundShapes] = useState(() => generateRoundShapes());
 
   const positions = useRef(
-    SHAPES.map(() => new Animated.ValueXY({ x: 0, y: 0 }))
+    [0, 1, 2, 3].map(() => new Animated.ValueXY({ x: 0, y: 0 }))
   ).current;
 
   const holeLayouts = useRef<Record<string, { x: number; y: number }>>({});
@@ -143,8 +181,11 @@ export default function ShapeSorterScreen() {
           setShowComplete(true);
         } else {
           setTimeout(() => {
+            const newShapes = generateRoundShapes();
+            console.log('[ShapeSorter] New round', nextRound + 1, 'shapes:', newShapes.map(s => s.id).join(', '));
             setRound(nextRound);
             setSorted(new Set());
+            setRoundShapes(newShapes);
             lockedOffsets.current = {};
             hasMeasured.current = {};
             originalShapeLayouts.current = {};
@@ -182,19 +223,22 @@ export default function ShapeSorterScreen() {
   }, [positions, handleDrop]);
 
   const panResponders = useRef(
-    SHAPES.map((shape, i) => createPanResponder(shape.id, i))
+    roundShapes.map((shape, i) => createPanResponder(shape.id, i))
   );
 
-  // Recreate pan responders when sorted changes
+  // Recreate pan responders when sorted or roundShapes changes
   React.useEffect(() => {
-    panResponders.current = SHAPES.map((shape, i) => createPanResponder(shape.id, i));
-  }, [sorted, createPanResponder]);
+    panResponders.current = roundShapes.map((shape, i) => createPanResponder(shape.id, i));
+  }, [sorted, roundShapes, createPanResponder]);
 
   const handlePlayAgain = () => {
     console.log('[ShapeSorter] Play again pressed');
+    const newShapes = generateRoundShapes();
+    console.log('[ShapeSorter] New game shapes:', newShapes.map(s => s.id).join(', '));
     setShowComplete(false);
     setRound(0);
     setSorted(new Set());
+    setRoundShapes(newShapes);
     lockedOffsets.current = {};
     hasMeasured.current = {};
     originalShapeLayouts.current = {};
@@ -223,7 +267,7 @@ export default function ShapeSorterScreen() {
 
       {/* Holes */}
       <View style={styles.holesRow}>
-        {SHAPES.map(shape => (
+        {roundShapes.map(shape => (
           <View
             key={shape.id}
             style={styles.hole}
@@ -248,7 +292,7 @@ export default function ShapeSorterScreen() {
 
       {/* Draggable shapes */}
       <View style={styles.shapesRow}>
-        {SHAPES.map((shape, i) => {
+        {roundShapes.map((shape, i) => {
           const isLocked = !!lockedOffsets.current[shape.id];
           return (
             <Animated.View
