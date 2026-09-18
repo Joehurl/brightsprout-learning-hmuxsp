@@ -2,7 +2,7 @@
   "expo": {
     "name": "BrightSprout",
     "slug": "brightsprout",
-    "copyright": "© 2025 BrightSprout",
+    "copyright": "\u00a9 2025 BrightSprout",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -61,7 +61,7 @@
     "ios": {
       "bundleIdentifier": "com.brightsprout.learning",
       "infoPlist": {
-        "NSHumanReadableCopyright": "© 2025 BrightSprout"
+        "NSHumanReadableCopyright": "\u00a9 2025 BrightSprout"
       }
     }
   }
