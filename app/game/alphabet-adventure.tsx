@@ -72,31 +72,7 @@ const ABC_MELODY_DURATIONS = [
   400, 400, 400, 400, 400, 800,       // V-Z
 ];
 
-function playAbcMelodyWeb() {
-  try {
-    const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    let time = ctx.currentTime;
 
-    ABC_MELODY_FREQS.forEach((freq, i) => {
-      const dur = (ABC_MELODY_DURATIONS[i] ?? 400) / 1000;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, time);
-      gain.gain.setValueAtTime(0.35, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + dur * 0.9);
-      osc.start(time);
-      osc.stop(time + dur);
-      time += dur;
-    });
-  } catch (e) {
-    console.log('[AlphabetAdventure] Web Audio API error:', e);
-  }
-}
 
 export default function AlphabetAdventureScreen() {
   const router = useRouter();
@@ -159,7 +135,29 @@ export default function AlphabetAdventureScreen() {
   const clearAllTimeouts = useCallback(() => {
     timeoutIdsRef.current.forEach(id => clearTimeout(id));
     timeoutIdsRef.current = [];
+    const rafRef = (timeoutIdsRef as any).rafRef;
+    if (rafRef?.id) {
+      cancelAnimationFrame(rafRef.id);
+      (timeoutIdsRef as any).rafRef = null;
+    }
   }, []);
+
+  const scheduleWithTimeouts = useCallback((startTimes: number[], totalDuration: number) => {
+    goToLetter(0);
+    for (let i = 0; i < 26; i++) {
+      const idx = i;
+      const id = setTimeout(() => {
+        goToLetter(idx);
+        animateNote();
+      }, startTimes[i]);
+      timeoutIdsRef.current.push(id);
+    }
+    const endId = setTimeout(() => {
+      setIsPlaying(false);
+      handleGameComplete();
+    }, totalDuration + 200);
+    timeoutIdsRef.current.push(endId);
+  }, [goToLetter, animateNote]);
 
   const handlePlaySong = () => {
     console.log('[AlphabetAdventure] Play ABC Song pressed, isPlaying:', isPlaying);
@@ -169,36 +167,89 @@ export default function AlphabetAdventureScreen() {
       return;
     }
     setIsPlaying(true);
-    goToLetter(0);
 
-    // On web: play the actual ABC melody via Web Audio API
-    if (Platform.OS === 'web') {
-      console.log('[AlphabetAdventure] Playing ABC melody via Web Audio API');
-      playAbcMelodyWeb();
-    } else {
-      console.log('[AlphabetAdventure] Native: visual letter sync (no audio)');
-    }
-
-    // Schedule exactly ONE set of 26 timeouts — one per letter, timed to ABC_MELODY_DURATIONS
-    // Letter 0 is already shown; start scheduling from t=0 for letter 0, then accumulate
-    let cumulativeDelay = 0;
+    // Build cumulative start times for each letter (in ms from now)
+    const startTimes: number[] = [];
+    let acc = 0;
     for (let i = 0; i < 26; i++) {
-      const capturedIdx = i;
-      const capturedDelay = cumulativeDelay;
-      const id = setTimeout(() => {
-        goToLetter(capturedIdx);
-        animateNote();
-      }, capturedDelay);
-      timeoutIdsRef.current.push(id);
-      cumulativeDelay += ABC_MELODY_DURATIONS[i] ?? 400;
+      startTimes.push(acc);
+      acc += ABC_MELODY_DURATIONS[i] ?? 400;
     }
+    const totalDuration = acc;
 
-    // Final timeout to end the song
-    const endId = setTimeout(() => {
-      setIsPlaying(false);
-      handleGameComplete();
-    }, cumulativeDelay + 200);
-    timeoutIdsRef.current.push(endId);
+    if (Platform.OS === 'web') {
+      // Use Web Audio API — schedule all notes
+      const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (AudioContextClass) {
+        try {
+          const ctx = new AudioContextClass();
+          const startAudioTime = ctx.currentTime;
+
+          console.log('[AlphabetAdventure] Playing ABC melody via Web Audio API (rAF sync)');
+
+          // Schedule all 26 notes
+          ABC_MELODY_FREQS.forEach((freq, i) => {
+            const noteStart = startAudioTime + startTimes[i] / 1000;
+            const dur = (ABC_MELODY_DURATIONS[i] ?? 400) / 1000;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, noteStart);
+            gain.gain.setValueAtTime(0.4, noteStart);
+            gain.gain.exponentialRampToValueAtTime(0.001, noteStart + dur * 0.85);
+            osc.start(noteStart);
+            osc.stop(noteStart + dur);
+          });
+
+          // Use rAF loop to sync visuals to audio clock
+          let lastLetterIdx = -1;
+          const rafRef = { id: 0 };
+          const tick = () => {
+            const elapsed = (ctx.currentTime - startAudioTime) * 1000; // ms
+            // Find which letter should be active
+            let activeIdx = 25;
+            for (let i = 0; i < 26; i++) {
+              if (elapsed < startTimes[i] + (ABC_MELODY_DURATIONS[i] ?? 400)) {
+                activeIdx = i;
+                break;
+              }
+            }
+            if (activeIdx !== lastLetterIdx) {
+              lastLetterIdx = activeIdx;
+              goToLetter(activeIdx);
+              animateNote();
+            }
+            if (elapsed < totalDuration + 200) {
+              rafRef.id = requestAnimationFrame(tick);
+            } else {
+              setIsPlaying(false);
+              handleGameComplete();
+            }
+          };
+          rafRef.id = requestAnimationFrame(tick);
+          // Store cancel function
+          const cancelId = setTimeout(() => {
+            cancelAnimationFrame(rafRef.id);
+            setIsPlaying(false);
+          }, totalDuration + 500);
+          timeoutIdsRef.current.push(cancelId);
+          // Store rafRef for cleanup
+          (timeoutIdsRef as any).rafRef = rafRef;
+        } catch (e) {
+          console.log('[AlphabetAdventure] Web Audio error:', e);
+          // Fall through to setTimeout approach
+          scheduleWithTimeouts(startTimes, totalDuration);
+        }
+      } else {
+        scheduleWithTimeouts(startTimes, totalDuration);
+      }
+    } else {
+      // Native: use setTimeout (no audio, just visual)
+      console.log('[AlphabetAdventure] Native: visual letter sync (no audio)');
+      scheduleWithTimeouts(startTimes, totalDuration);
+    }
   };
 
   const handleGameComplete = async () => {

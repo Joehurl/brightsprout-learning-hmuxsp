@@ -28,7 +28,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_COLS = 3;
 const GRID_ROWS = 2;
 const PIECE_COUNT = GRID_COLS * GRID_ROWS;
-const SNAP_THRESHOLD = 55;
+const SNAP_THRESHOLD = 80;
 
 // Piece display size in tray and drop zone
 const DROP_PIECE_SIZE = Math.floor((SCREEN_WIDTH - 48 - 16) / GRID_COLS);
@@ -277,6 +277,7 @@ export default function JigsawPuzzleScreen() {
   const bounceAnims = useRef(PIECES.map(() => new Animated.Value(1))).current;
 
   const dropZoneLayouts = useRef<Record<number, { x: number; y: number }>>({});
+  const dropZoneRefs = useRef<Map<number, any>>(new Map());
   const originalPieceLayouts = useRef<Record<number, { x: number; y: number }>>({});
   const hasMeasured = useRef<Record<number, boolean>>({});
   const lockedOffsets = useRef<Record<number, { x: number; y: number }>>({});
@@ -415,26 +416,41 @@ export default function JigsawPuzzleScreen() {
       </View>
 
       {/* Drop zones grid */}
-      <View style={styles.dropGrid}>
+      <View
+        style={styles.dropGrid}
+        onLayout={() => {
+          // Re-measure all drop zones after the grid lays out
+          setTimeout(() => {
+            dropZoneRefs.current.forEach((ref, pieceId) => {
+              if (ref) {
+                (ref as any).measureInWindow((x: number, y: number, w: number, h: number) => {
+                  dropZoneLayouts.current[pieceId] = {
+                    x: x + w / 2,
+                    y: y + h / 2,
+                  };
+                });
+              }
+            });
+          }, 150);
+        }}
+      >
         {PIECES.map(piece => {
           const isSnapped = snapped.has(piece.id);
           return (
             <View
               key={piece.id}
               style={styles.dropZoneWrapper}
-              onLayout={(e) => {
-                const { x, y, width, height } = e.nativeEvent.layout;
-                // onLayout gives coords relative to parent — we need page coords
-                // We'll use a ref callback measure instead
-              }}
               ref={(ref) => {
+                dropZoneRefs.current.set(piece.id, ref);
                 if (ref) {
-                  (ref as any).measure((_x: number, _y: number, width: number, height: number, pageX: number, pageY: number) => {
-                    dropZoneLayouts.current[piece.id] = {
-                      x: pageX + width / 2,
-                      y: pageY + height / 2,
-                    };
-                  });
+                  setTimeout(() => {
+                    (ref as any).measureInWindow((x: number, y: number, w: number, h: number) => {
+                      dropZoneLayouts.current[piece.id] = {
+                        x: x + w / 2,
+                        y: y + h / 2,
+                      };
+                    });
+                  }, 100);
                 }
               }}
             >
@@ -479,15 +495,19 @@ export default function JigsawPuzzleScreen() {
               pointerEvents={isSnapped ? 'none' : 'auto'}
               ref={(ref) => {
                 if (ref && !hasMeasured.current[pieceId]) {
-                  (ref as any).measure((_x: number, _y: number, width: number, height: number, pageX: number, pageY: number) => {
+                  setTimeout(() => {
                     if (!hasMeasured.current[pieceId]) {
-                      hasMeasured.current[pieceId] = true;
-                      originalPieceLayouts.current[pieceId] = {
-                        x: pageX + width / 2,
-                        y: pageY + height / 2,
-                      };
+                      (ref as any).measureInWindow((x: number, y: number, w: number, h: number) => {
+                        if (!hasMeasured.current[pieceId]) {
+                          hasMeasured.current[pieceId] = true;
+                          originalPieceLayouts.current[pieceId] = {
+                            x: x + w / 2,
+                            y: y + h / 2,
+                          };
+                        }
+                      });
                     }
-                  });
+                  }, 100);
                 }
               }}
               {...panResponders[pieceId].panHandlers}

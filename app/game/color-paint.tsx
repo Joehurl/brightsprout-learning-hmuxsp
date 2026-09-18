@@ -160,6 +160,7 @@ export default function ColorPaintScreen() {
   const handleClear = () => {
     console.log('[ColorPaint] Clear pressed');
     setPaintedColors({ sky: null, sun: null, house: null, roof: null, grass: null });
+    setTargetColors(generateTargetColors());
     setSelectedColor(null);
     setSelectedColorName(null);
   };
