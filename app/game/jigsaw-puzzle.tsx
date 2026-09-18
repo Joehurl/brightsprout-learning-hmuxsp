@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -273,13 +273,13 @@ export default function JigsawPuzzleScreen() {
   const [draggingPieceId, setDraggingPieceId] = useState<number | null>(null);
   const draggingPieceIdRef = useRef<number | null>(null);
   const dragOverlayPos = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
-  const dragStartPagePos = useRef<{ x: number; y: number } | null>(null);
 
+  // positions are used ONLY for the snap spring animation after a successful drop
   const positions = useRef(PIECES.map(() => new Animated.ValueXY({ x: 0, y: 0 }))).current;
   const bounceAnims = useRef(PIECES.map(() => new Animated.Value(1))).current;
 
   const dropZoneLayouts = useRef<Record<number, { x: number; y: number }>>({});
-  const dropZoneRefs = useRef<Map<number, any>>(new Map());
+  const dropZoneRefs = useRef<Map<number, View | null>>(new Map());
   const originalPieceLayouts = useRef<Record<number, { x: number; y: number }>>({});
   const hasMeasured = useRef<Record<number, boolean>>({});
   const lockedOffsets = useRef<Record<number, { x: number; y: number }>>({});
@@ -343,49 +343,40 @@ export default function JigsawPuzzleScreen() {
   }, [positions, bounceAnims, completeGame]);
 
   // Create pan responders ONCE — never recreated. Uses refs for all state checks.
+  // Key principle: during drag the tray piece stays still (opacity 0).
+  // Only the overlay moves, positioned directly in screen space via pageX/pageY.
   const panResponders = useRef(
     PIECES.map(piece =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => !lockedOffsets.current[piece.id],
         onMoveShouldSetPanResponder: () => !lockedOffsets.current[piece.id],
-        onPanResponderGrant: () => {
+        onPanResponderGrant: (evt) => {
           console.log('[JigsawPuzzle] Drag started:', piece.name);
-          // Record start position for overlay
-          const origin = originalPieceLayouts.current[piece.id];
-          const startX = origin ? origin.x - TRAY_PIECE_SIZE / 2 : 0;
-          const startY = origin ? origin.y - TRAY_PIECE_SIZE / 2 : 0;
-          dragStartPagePos.current = { x: startX, y: startY };
-          dragOverlayPos.setValue({ x: startX, y: startY });
+          const { pageX, pageY } = evt.nativeEvent;
+          // Position overlay centered on finger
+          dragOverlayPos.setValue({
+            x: pageX - TRAY_PIECE_SIZE / 2,
+            y: pageY - TRAY_PIECE_SIZE / 2,
+          });
           draggingPieceIdRef.current = piece.id;
           setDraggingPieceId(piece.id);
-
-          positions[piece.id].setOffset({
-            x: (positions[piece.id].x as any)._value,
-            y: (positions[piece.id].y as any)._value,
-          });
-          positions[piece.id].setValue({ x: 0, y: 0 });
         },
-        onPanResponderMove: (_, gestureState) => {
-          // Update the underlying position (for snap logic)
-          const xVal = positions[piece.id].x as any;
-          const yVal = positions[piece.id].y as any;
-          xVal.setValue(gestureState.dx);
-          yVal.setValue(gestureState.dy);
-
-          // Update overlay position in screen space
-          if (dragStartPagePos.current) {
-            dragOverlayPos.setValue({
-              x: dragStartPagePos.current.x + gestureState.dx,
-              y: dragStartPagePos.current.y + gestureState.dy,
-            });
-          }
+        onPanResponderMove: (evt) => {
+          const { pageX, pageY } = evt.nativeEvent;
+          dragOverlayPos.setValue({
+            x: pageX - TRAY_PIECE_SIZE / 2,
+            y: pageY - TRAY_PIECE_SIZE / 2,
+          });
         },
         onPanResponderRelease: (evt) => {
+          const { pageX, pageY } = evt.nativeEvent;
           draggingPieceIdRef.current = null;
           setDraggingPieceId(null);
-          positions[piece.id].flattenOffset();
-          const { pageX, pageY } = evt.nativeEvent;
           handleDrop(piece.id, pageX, pageY);
+        },
+        onPanResponderTerminate: () => {
+          draggingPieceIdRef.current = null;
+          setDraggingPieceId(null);
         },
       })
     )
@@ -416,138 +407,165 @@ export default function JigsawPuzzleScreen() {
   const draggingPiece = draggingPieceId !== null ? PIECES[draggingPieceId] : null;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <AnimatedPressable
-          style={styles.backBtn}
-          onPress={() => {
-            console.log('[JigsawPuzzle] Back pressed');
-            router.back();
+    // Outer wrapper — no padding, flex:1. Overlay lives here so position:absolute
+    // left:0 top:0 maps to true screen origin (unaffected by inner padding).
+    <View style={styles.outerWrapper}>
+      {/* Inner container with all the padding */}
+      <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
+        {/* Header */}
+        <View style={styles.header}>
+          <AnimatedPressable
+            style={styles.backBtn}
+            onPress={() => {
+              console.log('[JigsawPuzzle] Back pressed');
+              router.back();
+            }}
+          >
+            <ChevronLeft size={28} color={KIDS_COLORS.shapes} />
+          </AnimatedPressable>
+          <Text style={styles.title}>Jigsaw Puzzle 🧩</Text>
+          <Mascot size={56} animate={false} expression="happy" />
+        </View>
+
+        <Text style={styles.instruction}>Drag each piece to its matching spot!</Text>
+
+        {/* Progress */}
+        <View style={styles.progressRow}>
+          <Text style={styles.progressText}>{snappedSize} / {PIECE_COUNT} pieces placed</Text>
+          <View style={styles.progressBarBg}>
+            <View style={[styles.progressBarFill, { width: progressPct }]} />
+          </View>
+        </View>
+
+        {/* Drop zones grid */}
+        <View
+          style={styles.dropGrid}
+          onLayout={() => {
+            // Re-measure all drop zones after the grid lays out
+            setTimeout(() => {
+              dropZoneRefs.current.forEach((ref, pieceId) => {
+                if (ref) {
+                  (ref as any).measureInWindow((x: number, y: number, w: number, h: number) => {
+                    dropZoneLayouts.current[pieceId] = {
+                      x: x + w / 2,
+                      y: y + h / 2,
+                    };
+                  });
+                }
+              });
+            }, 150);
           }}
         >
-          <ChevronLeft size={28} color={KIDS_COLORS.shapes} />
-        </AnimatedPressable>
-        <Text style={styles.title}>Jigsaw Puzzle 🧩</Text>
-        <Mascot size={56} animate={false} expression="happy" />
-      </View>
-
-      <Text style={styles.instruction}>Drag each piece to its matching spot!</Text>
-
-      {/* Progress */}
-      <View style={styles.progressRow}>
-        <Text style={styles.progressText}>{snappedSize} / {PIECE_COUNT} pieces placed</Text>
-        <View style={styles.progressBarBg}>
-          <View style={[styles.progressBarFill, { width: progressPct }]} />
-        </View>
-      </View>
-
-      {/* Drop zones grid */}
-      <View
-        style={styles.dropGrid}
-        onLayout={() => {
-          // Re-measure all drop zones after the grid lays out
-          setTimeout(() => {
-            dropZoneRefs.current.forEach((ref, pieceId) => {
-              if (ref) {
-                (ref as any).measureInWindow((x: number, y: number, w: number, h: number) => {
-                  dropZoneLayouts.current[pieceId] = {
-                    x: x + w / 2,
-                    y: y + h / 2,
-                  };
-                });
-              }
-            });
-          }, 150);
-        }}
-      >
-        {PIECES.map(piece => {
-          const isSnapped = snapped.has(piece.id);
-          return (
-            <View
-              key={piece.id}
-              style={styles.dropZoneWrapper}
-              ref={(ref) => {
-                dropZoneRefs.current.set(piece.id, ref);
-                if (ref) {
-                  setTimeout(() => {
-                    (ref as any).measureInWindow((x: number, y: number, w: number, h: number) => {
-                      dropZoneLayouts.current[piece.id] = {
-                        x: x + w / 2,
-                        y: y + h / 2,
-                      };
-                    });
-                  }, 100);
-                }
-              }}
-            >
-              {isSnapped ? (
-                <PieceSvg col={piece.col} row={piece.row} size={DROP_PIECE_SIZE} label={piece.label} />
-              ) : (
-                <PieceSvg col={piece.col} row={piece.row} size={DROP_PIECE_SIZE} label={piece.label} isDashed />
-              )}
-            </View>
-          );
-        })}
-      </View>
-
-      <View style={styles.divider} />
-
-      {/* Pieces tray */}
-      <Text style={styles.trayLabel}>Pieces Tray</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.trayContent}
-        style={styles.tray}
-      >
-        {shuffledOrder.map(pieceId => {
-          const piece = PIECES[pieceId];
-          const isSnapped = snapped.has(pieceId);
-          const isDragging = draggingPieceId === pieceId;
-          const pieceOpacity = isSnapped ? 0.3 : isDragging ? 0 : 1;
-          return (
-            <Animated.View
-              key={pieceId}
-              style={[
-                styles.pieceWrapper,
-                {
-                  transform: [
-                    { translateX: positions[pieceId].x },
-                    { translateY: positions[pieceId].y },
-                    { scale: bounceAnims[pieceId] },
-                  ],
-                  zIndex: isSnapped ? 0 : 10,
-                  opacity: pieceOpacity,
-                },
-              ]}
-              pointerEvents={isSnapped ? 'none' : 'auto'}
-              ref={(ref) => {
-                if (ref && !hasMeasured.current[pieceId]) {
-                  setTimeout(() => {
-                    if (!hasMeasured.current[pieceId]) {
+          {PIECES.map(piece => {
+            const isSnapped = snapped.has(piece.id);
+            return (
+              <View
+                key={piece.id}
+                style={styles.dropZoneWrapper}
+                ref={(ref) => {
+                  dropZoneRefs.current.set(piece.id, ref);
+                  if (ref) {
+                    setTimeout(() => {
                       (ref as any).measureInWindow((x: number, y: number, w: number, h: number) => {
-                        if (!hasMeasured.current[pieceId]) {
-                          hasMeasured.current[pieceId] = true;
-                          originalPieceLayouts.current[pieceId] = {
-                            x: x + w / 2,
-                            y: y + h / 2,
-                          };
-                        }
+                        dropZoneLayouts.current[piece.id] = {
+                          x: x + w / 2,
+                          y: y + h / 2,
+                        };
                       });
-                    }
-                  }, 100);
-                }
-              }}
-              {...panResponders[pieceId].panHandlers}
-            >
-              <PieceSvg col={piece.col} row={piece.row} size={TRAY_PIECE_SIZE} label={piece.label} />
-            </Animated.View>
-          );
-        })}
-      </ScrollView>
+                    }, 100);
+                  }
+                }}
+              >
+                {isSnapped ? (
+                  <PieceSvg col={piece.col} row={piece.row} size={DROP_PIECE_SIZE} label={piece.label} />
+                ) : (
+                  <PieceSvg col={piece.col} row={piece.row} size={DROP_PIECE_SIZE} label={piece.label} isDashed />
+                )}
+              </View>
+            );
+          })}
+        </View>
 
-      {/* Drag overlay — renders above everything including the drop grid */}
+        <View style={styles.divider} />
+
+        {/* Pieces tray */}
+        <Text style={styles.trayLabel}>Pieces Tray</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.trayContent}
+          style={styles.tray}
+        >
+          {shuffledOrder.map(pieceId => {
+            const piece = PIECES[pieceId];
+            const isSnapped = snapped.has(pieceId);
+            const isDragging = draggingPieceId === pieceId;
+            const pieceOpacity = isSnapped ? 0.3 : isDragging ? 0 : 1;
+            return (
+              <Animated.View
+                key={pieceId}
+                style={[
+                  styles.pieceWrapper,
+                  {
+                    // No translateX/translateY — tray piece stays still during drag.
+                    // positions values are only animated during snap spring after drop.
+                    transform: [
+                      { scale: bounceAnims[pieceId] },
+                    ],
+                    zIndex: isSnapped ? 0 : 10,
+                    opacity: pieceOpacity,
+                  },
+                ]}
+                pointerEvents={isSnapped ? 'none' : 'auto'}
+                ref={(ref) => {
+                  if (ref && !hasMeasured.current[pieceId]) {
+                    setTimeout(() => {
+                      if (!hasMeasured.current[pieceId]) {
+                        (ref as any).measureInWindow((x: number, y: number, w: number, h: number) => {
+                          if (!hasMeasured.current[pieceId]) {
+                            hasMeasured.current[pieceId] = true;
+                            originalPieceLayouts.current[pieceId] = {
+                              x: x + w / 2,
+                              y: y + h / 2,
+                            };
+                          }
+                        });
+                      }
+                    }, 100);
+                  }
+                }}
+                {...panResponders[pieceId].panHandlers}
+              >
+                <PieceSvg col={piece.col} row={piece.row} size={TRAY_PIECE_SIZE} label={piece.label} />
+              </Animated.View>
+            );
+          })}
+        </ScrollView>
+
+        <GameCompleteOverlay
+          visible={showComplete}
+          stars={3}
+          message="Puzzle Master! 🧩"
+          onPlayAgain={handlePlayAgain}
+          onGoHome={() => {
+            setShowComplete(false);
+            if (newBadges.length > 0) {
+              setShowBadges(true);
+            } else {
+              router.back();
+            }
+          }}
+        />
+
+        <BadgeCelebration
+          visible={showBadges}
+          badges={newBadges}
+          onDismiss={handleBadgeDismiss}
+        />
+      </View>
+
+      {/* Drag overlay — lives outside the padded container so position:absolute
+          left:0 top:0 is the true screen origin. dragOverlayPos holds screen coords. */}
       {draggingPiece !== null && (
         <Animated.View
           pointerEvents="none"
@@ -564,35 +582,17 @@ export default function JigsawPuzzleScreen() {
           <PieceSvg col={draggingPiece.col} row={draggingPiece.row} size={TRAY_PIECE_SIZE} label={draggingPiece.label} />
         </Animated.View>
       )}
-
-      <GameCompleteOverlay
-        visible={showComplete}
-        stars={3}
-        message="Puzzle Master! 🧩"
-        onPlayAgain={handlePlayAgain}
-        onGoHome={() => {
-          setShowComplete(false);
-          if (newBadges.length > 0) {
-            setShowBadges(true);
-          } else {
-            router.back();
-          }
-        }}
-      />
-
-      <BadgeCelebration
-        visible={showBadges}
-        badges={newBadges}
-        onDismiss={handleBadgeDismiss}
-      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  outerWrapper: {
     flex: 1,
     backgroundColor: KIDS_COLORS.shapesMuted,
+  },
+  container: {
+    flex: 1,
     paddingHorizontal: 24,
     overflow: 'visible',
   },
