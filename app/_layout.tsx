@@ -169,6 +169,7 @@ function RootLayoutInner() {
                   <Stack.Screen name="game/spelling-bee" options={{ headerShown: false }} />
                   <Stack.Screen name="game/memory-match" options={{ headerShown: false }} />
                   <Stack.Screen name="game/picture-word-match" options={{ headerShown: false }} />
+                  <Stack.Screen name="game/jigsaw-puzzle" options={{ headerShown: false }} />
                   <Stack.Screen name="game/drawing-canvas" options={{ headerShown: false }} />
                 </Stack>
                 <SystemBars style={"auto"} />
