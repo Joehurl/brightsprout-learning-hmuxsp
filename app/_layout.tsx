@@ -156,21 +156,7 @@ function RootLayoutInner() {
                   <Stack.Screen name="onboarding" options={{ headerShown: false }} />
                   <Stack.Screen name="paywall" options={{ presentation: "modal", headerShown: false }} />
                   <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                  <Stack.Screen name="game/alphabet-adventure" options={{ headerShown: false }} />
-                  <Stack.Screen name="game/letter-trace" options={{ headerShown: false }} />
-                  <Stack.Screen name="game/letter-match" options={{ headerShown: false }} />
-                  <Stack.Screen name="game/phonics" options={{ headerShown: false }} />
-                  <Stack.Screen name="game/counting" options={{ headerShown: false }} />
-                  <Stack.Screen name="game/number-quiz" options={{ headerShown: false }} />
-                  <Stack.Screen name="game/addition" options={{ headerShown: false }} />
-                  <Stack.Screen name="game/shape-sorter" options={{ headerShown: false }} />
-                  <Stack.Screen name="game/color-paint" options={{ headerShown: false }} />
-                  <Stack.Screen name="game/animal-sounds" options={{ headerShown: false }} />
-                  <Stack.Screen name="game/spelling-bee" options={{ headerShown: false }} />
-                  <Stack.Screen name="game/memory-match" options={{ headerShown: false }} />
-                  <Stack.Screen name="game/picture-word-match" options={{ headerShown: false }} />
-                  <Stack.Screen name="game/jigsaw-puzzle" options={{ headerShown: false }} />
-                  <Stack.Screen name="game/drawing-canvas" options={{ headerShown: false }} />
+                  <Stack.Screen name="game" options={{ headerShown: false }} />
                 </Stack>
                 <SystemBars style={"auto"} />
               </GestureHandlerRootView>

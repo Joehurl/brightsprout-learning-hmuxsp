@@ -39,7 +39,9 @@ import * as SecureStore from "expo-secure-store";
 // Read API keys from app.json (expo.extra)
 const extra = Constants.expoConfig?.extra || {};
 const ANDROID_API_KEY = extra.revenueCatApiKeyAndroid || "";
+const IOS_API_KEY = extra.revenueCatApiKeyIos || extra.revenueCatApiKey || "";
 const TEST_ANDROID_API_KEY = extra.revenueCatTestApiKeyAndroid || "";
+const PLATFORM_API_KEY = Platform.select({ ios: IOS_API_KEY, android: ANDROID_API_KEY }) ?? "";
 const ENTITLEMENT_ID = extra.revenueCatEntitlementId || "pro";
 
 // Check if running on web
@@ -149,13 +151,13 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         // Use DEBUG log level in development, INFO in production
         Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.INFO);
 
-        // Get API key based on environment
-        const apiKey = __DEV__ && TEST_ANDROID_API_KEY ? TEST_ANDROID_API_KEY : ANDROID_API_KEY;
+        // Get API key based on environment and platform
+        const apiKey = __DEV__ && TEST_ANDROID_API_KEY ? TEST_ANDROID_API_KEY : PLATFORM_API_KEY;
 
         if (!apiKey) {
           console.warn(
-            "[RevenueCat] Android API key not provided. " +
-            "Please add revenueCatApiKeyAndroid to app.json extra."
+            "[RevenueCat] API key not provided for platform: " + Platform.OS + ". " +
+            "Please add revenueCatApiKeyIos / revenueCatApiKeyAndroid to app.json extra."
           );
           setLoading(false);
           return;
