@@ -16,7 +16,7 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "package": "app.speakbridgego",
+      "package": "com.brightsprout.learning",
       "versionCode": 7,
       "softwareKeyboardLayoutMode": "pan",
       "permissions": [
@@ -57,7 +57,7 @@
       "revenueCatEntitlementId": "pro"
     },
     "ios": {
-      "bundleIdentifier": "app.speakbridgego",
+      "bundleIdentifier": "com.brightsprout.learning",
       "infoPlist": {
         "NSHumanReadableCopyright": "\u00a9 2025 BrightSprout",
         "ITSAppUsesNonExemptEncryption": false
