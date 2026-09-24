@@ -58,6 +58,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.brightsprout.learning",
+      "supportsTablet": true,
       "infoPlist": {
         "NSHumanReadableCopyright": "\u00a9 2025 BrightSprout",
         "ITSAppUsesNonExemptEncryption": false
