@@ -5,7 +5,7 @@
  * Reads API keys from app.json (expo.extra) automatically.
  *
  * Supports:
- * - Native Android via RevenueCat SDK
+ * - Native iOS/Android via RevenueCat SDK
  * - Web preview via RevenueCat REST API (read-only pricing display)
  * - Expo Go via test store keys
  *
@@ -38,10 +38,10 @@ import * as SecureStore from "expo-secure-store";
 
 // Read API keys from app.json (expo.extra)
 const extra = Constants.expoConfig?.extra || {};
+const IOS_API_KEY = extra.revenueCatApiKeyIos || "";
 const ANDROID_API_KEY = extra.revenueCatApiKeyAndroid || "";
-const IOS_API_KEY = extra.revenueCatApiKeyIos || extra.revenueCatApiKey || "";
+const TEST_IOS_API_KEY = extra.revenueCatTestApiKeyIos || "";
 const TEST_ANDROID_API_KEY = extra.revenueCatTestApiKeyAndroid || "";
-const PLATFORM_API_KEY = Platform.select({ ios: IOS_API_KEY, android: ANDROID_API_KEY }) ?? "";
 const ENTITLEMENT_ID = extra.revenueCatEntitlementId || "pro";
 
 // Check if running on web
@@ -99,29 +99,21 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const fetchOfferingsViaRest = async () => {
     // Mock package with real prices from RevenueCat dashboard
     const mockPackage = {
-      identifier: "$rc_lifetime",
+      identifier: "$rc_monthly",
       product: {
-        title: "BrightSprout Lifetime",
-        priceString: "$4.99",
-        description: "Unlock all games forever",
+        title: "Premium",
+        priceString: "$4.99/month",
+        description: "Unlock all premium features",
       },
     };
 
-    const mockMonthly = {
-      identifier: "$rc_monthly",
-      product: {
-        title: "BrightSprout Monthly",
-        priceString: "$1.99",
-        description: "Full access, cancel anytime",
-      },
-    };
-    setPackages([mockMonthly, mockPackage] as PurchasesPackage[]);
+    setPackages([mockPackage] as PurchasesPackage[]);
     console.log("[revenuecat] Web preview: showing real prices from dashboard");
   };
 
   // Initialize RevenueCat on mount
   useEffect(() => {
-    let customerInfoCallback: ((customerInfo: any) => void) | null = null;
+    let customerInfoListener: { remove: () => void } | null = null;
 
     const initRevenueCat = async () => {
       try {
@@ -159,13 +151,17 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         // Use DEBUG log level in development, INFO in production
         Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.INFO);
 
-        // Get API key based on environment and platform
-        const apiKey = __DEV__ && TEST_ANDROID_API_KEY ? TEST_ANDROID_API_KEY : PLATFORM_API_KEY;
+        // Get API key based on platform and environment
+        // In development (__DEV__), use ANY available test key (test store works for all platforms)
+        // This allows Expo Go to work on iOS even without a platform-specific test key
+        const testKey = TEST_IOS_API_KEY || TEST_ANDROID_API_KEY;
+        const productionKey = Platform.OS === "ios" ? IOS_API_KEY : ANDROID_API_KEY;
+        const apiKey = __DEV__ && testKey ? testKey : productionKey;
 
         if (!apiKey) {
           console.warn(
-            "[RevenueCat] API key not provided for platform: " + Platform.OS + ". " +
-            "Please add revenueCatApiKeyIos / revenueCatApiKeyAndroid to app.json extra."
+            "[RevenueCat] API key not provided for this platform. " +
+            "Please add revenueCatApiKeyIos/revenueCatApiKeyAndroid to app.json extra."
           );
           setLoading(false);
           return;
@@ -185,17 +181,18 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         await Purchases.configure({ apiKey });
 
         // Listen for real-time subscription changes (e.g., purchase from another device)
-        customerInfoCallback = (customerInfo) => {
-          const hasEntitlement =
-            typeof customerInfo.entitlements.active[ENTITLEMENT_ID] !==
-            "undefined";
-          // In __DEV__: don't clear subscription state — RevenueCat test store purchases are
-          // in-memory only and won't be known to RC after a configure() call on reload.
-          if (hasEntitlement || !__DEV__) {
-            setIsSubscribed(hasEntitlement);
+        customerInfoListener = Purchases.addCustomerInfoUpdateListener(
+          (customerInfo) => {
+            const hasEntitlement =
+              typeof customerInfo.entitlements.active[ENTITLEMENT_ID] !==
+              "undefined";
+            // In __DEV__: don't clear subscription state — RevenueCat test store purchases are
+            // in-memory only and won't be known to RC after a configure() call on reload.
+            if (hasEntitlement || !__DEV__) {
+              setIsSubscribed(hasEntitlement);
+            }
           }
-        };
-        Purchases.addCustomerInfoUpdateListener(customerInfoCallback);
+        );
 
         // Fetch available products/packages
         await fetchOfferings();
@@ -213,8 +210,8 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
     // Cleanup listener on unmount
     return () => {
-      if (customerInfoCallback) {
-        Purchases.removeCustomerInfoUpdateListener(customerInfoCallback);
+      if (customerInfoListener) {
+        customerInfoListener.remove();
       }
     };
   }, []);
