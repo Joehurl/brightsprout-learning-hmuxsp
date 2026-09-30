@@ -3,7 +3,7 @@
  * One-time lifetime purchase — pay once, own forever.
  */
 
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useWindowDimensions } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,6 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  Dimensions,
   Platform,
   Linking,
 } from "react-native";
@@ -28,8 +27,6 @@ import { Mascot } from "@/components/Mascot";
 
 const PRIVACY_POLICY_URL = "https://brightsprout.app/privacy";
 const TERMS_URL = "https://brightsprout.app/terms";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 // Free games — always playable without purchase
 const FREE_GAMES_LIST = [
@@ -50,15 +47,6 @@ const UNLOCK_FEATURES = [
 ];
 
 const FLOATING_EMOJIS = ["🔤", "📚", "🔢", "🎨", "🦁", "🎵"];
-
-const FLOAT_POSITIONS = [
-  { top: 20, left: SCREEN_WIDTH / 2 - 120 },
-  { top: 20, left: SCREEN_WIDTH / 2 + 60 },
-  { top: 90, left: SCREEN_WIDTH / 2 - 150 },
-  { top: 90, left: SCREEN_WIDTH / 2 + 90 },
-  { top: 160, left: SCREEN_WIDTH / 2 - 120 },
-  { top: 160, left: SCREEN_WIDTH / 2 + 60 },
-];
 
 function FloatingEmoji({ emoji, position, delay }: { emoji: string; position: { top: number; left: number }; delay: number }) {
   const floatAnim = useRef(new Animated.Value(0)).current;
@@ -88,6 +76,16 @@ function FloatingEmoji({ emoji, position, delay }: { emoji: string; position: { 
 }
 
 export default function PaywallScreen() {
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const FLOAT_POSITIONS = [
+    { top: 20, left: SCREEN_WIDTH / 2 - 120 },
+    { top: 20, left: SCREEN_WIDTH / 2 + 60 },
+    { top: 90, left: SCREEN_WIDTH / 2 - 150 },
+    { top: 90, left: SCREEN_WIDTH / 2 + 90 },
+    { top: 160, left: SCREEN_WIDTH / 2 - 120 },
+    { top: 160, left: SCREEN_WIDTH / 2 + 60 },
+  ];
+
   const router = useRouter();
   const {
     packages,

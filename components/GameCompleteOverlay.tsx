@@ -1,18 +1,15 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useWindowDimensions } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Animated,
-  Dimensions,
   Modal,
 } from 'react-native';
 import { KIDS_COLORS } from '@/constants/Colors';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { Confetti } from '@/components/Confetti';
 import { playSound } from '@/utils/sounds';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface GameCompleteOverlayProps {
   visible: boolean;
@@ -25,6 +22,7 @@ interface GameCompleteOverlayProps {
 const MESSAGES = ['Amazing!', 'Super Star!', 'Brilliant!', 'Fantastic!', 'Wonderful!'];
 
 export function GameCompleteOverlay({ visible, stars, message, onPlayAgain, onGoHome }: GameCompleteOverlayProps) {
+  const { height: SCREEN_HEIGHT } = useWindowDimensions();
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const star1 = useRef(new Animated.Value(0)).current;
   const star2 = useRef(new Animated.Value(0)).current;

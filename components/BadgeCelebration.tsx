@@ -5,14 +5,11 @@ import {
   StyleSheet,
   Animated,
   Modal,
-  Dimensions,
 } from 'react-native';
 import { KIDS_COLORS } from '@/constants/Colors';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { Confetti } from '@/components/Confetti';
 import { BADGES } from '@/utils/progress';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface BadgeCelebrationProps {
   badges: string[];
@@ -155,7 +152,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     padding: 32,
     alignItems: 'center',
-    width: SCREEN_WIDTH - 64,
+    width: '100%',
     overflow: 'hidden',
     shadowColor: KIDS_COLORS.shadow,
     shadowOffset: { width: 0, height: 12 },
