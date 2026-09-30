@@ -2,7 +2,6 @@ import React, { useWindowDimensions } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Slot } from 'expo-router';
 import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
-import { useSubscriptionGuard } from "@/hooks/useSubscriptionGuard";
 
 const TABS: TabBarItem[] = [
   { name: '(home)', route: '/(tabs)/(home)', icon: 'home', label: 'Learn' },
@@ -11,7 +10,6 @@ const TABS: TabBarItem[] = [
 ];
 
 export default function TabLayout() {
-  useSubscriptionGuard();
   const { width: screenWidth } = useWindowDimensions();
 
   return (
