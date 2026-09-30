@@ -3,7 +3,8 @@
  * Monthly subscription or one-time lifetime purchase.
  */
 
-import React, { useRef, useEffect, useState, useWindowDimensions } from "react";
+import React, { useRef, useEffect, useState } from "react";
+import { useWindowDimensions } from "react-native";
 import {
   View,
   Text,

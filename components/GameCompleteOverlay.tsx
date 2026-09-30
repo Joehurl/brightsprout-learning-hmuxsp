@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useWindowDimensions } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { useWindowDimensions } from 'react-native';
 import {
   View,
   Text,
