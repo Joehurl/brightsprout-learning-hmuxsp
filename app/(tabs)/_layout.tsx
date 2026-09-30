@@ -1,5 +1,5 @@
-import React, { useWindowDimensions } from 'react';
-import { View, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Slot } from 'expo-router';
 import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
 
