@@ -5,7 +5,6 @@ import {
   StyleSheet,
   PanResponder,
   Animated,
-  Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,8 +14,6 @@ import { KIDS_COLORS } from '@/constants/Colors';
 import { useProgress } from '@/contexts/ProgressContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { GameCompleteOverlay } from '@/components/GameCompleteOverlay';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const SHAPE_POOL = [
   { id: 'circle', label: 'Circle', color: '#4ECDC4', emoji: '🔵' },

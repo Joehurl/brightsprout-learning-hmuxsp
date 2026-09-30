@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   PanResponder,
-  Dimensions,
+  useWindowDimensions,
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -18,8 +18,6 @@ import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { GameCompleteOverlay } from '@/components/GameCompleteOverlay';
 import { BadgeCelebration } from '@/components/BadgeCelebration';
 import { Mascot } from '@/components/Mascot';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const PALETTE_COLORS = [
   { id: 'red', color: '#FF4444', label: 'Red' },
@@ -45,6 +43,7 @@ interface DrawPath {
 }
 
 export default function DrawingCanvasScreen() {
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeGame } = useProgress();

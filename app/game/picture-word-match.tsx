@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   Animated,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,10 +17,8 @@ import { GameCompleteOverlay } from '@/components/GameCompleteOverlay';
 import { BadgeCelebration } from '@/components/BadgeCelebration';
 import { Mascot } from '@/components/Mascot';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_MARGIN = 6;
 const COLS = 4;
-const CARD_SIZE = (SCREEN_WIDTH - 48 - CARD_MARGIN * (COLS - 1)) / COLS;
 
 const PAIRS = [
   { emoji: '🐶', word: 'DOG' },
@@ -77,9 +75,10 @@ interface CardProps {
   shakeAnim: Animated.Value;
   scaleAnim: Animated.Value;
   onPress: () => void;
+  cardSize: number;
 }
 
-function PairCard({ card, isSelected, isMatched, shakeAnim, scaleAnim, onPress }: CardProps) {
+function PairCard({ card, isSelected, isMatched, shakeAnim, scaleAnim, onPress, cardSize }: CardProps) {
   const isPicture = card.type === 'picture';
 
   const bgColor = isMatched
@@ -101,6 +100,8 @@ function PairCard({ card, isSelected, isMatched, shakeAnim, scaleAnim, onPress }
       style={[
         styles.cardWrapper,
         {
+          width: cardSize,
+          height: cardSize,
           transform: [
             { translateX: shakeAnim },
             { scale: scaleAnim },
@@ -132,6 +133,9 @@ function PairCard({ card, isSelected, isMatched, shakeAnim, scaleAnim, onPress }
 }
 
 export default function PictureWordMatchScreen() {
+  const { width } = useWindowDimensions();
+  const SCREEN_WIDTH = Math.min(width, 600);
+  const CARD_SIZE = (SCREEN_WIDTH - 48 - CARD_MARGIN * (COLS - 1)) / COLS;
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeGame } = useProgress();
@@ -286,7 +290,7 @@ export default function PictureWordMatchScreen() {
   const starsLabel = earnedStars === 3 ? '⭐⭐⭐ Amazing!' : earnedStars === 2 ? '⭐⭐ Great job!' : '⭐ You did it!';
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 12, maxWidth: 600, alignSelf: 'center', width: '100%' }]}>
       {/* Header */}
       <View style={styles.header}>
         <AnimatedPressable
@@ -326,6 +330,7 @@ export default function PictureWordMatchScreen() {
             shakeAnim={getShakeAnim(card.id)}
             scaleAnim={getScaleAnim(card.id)}
             onPress={() => handleCardPress(card)}
+            cardSize={CARD_SIZE}
           />
         ))}
       </View>
@@ -416,8 +421,6 @@ const styles = StyleSheet.create({
     alignContent: 'center',
   },
   cardWrapper: {
-    width: CARD_SIZE,
-    height: CARD_SIZE,
   },
   card: {
     width: '100%',

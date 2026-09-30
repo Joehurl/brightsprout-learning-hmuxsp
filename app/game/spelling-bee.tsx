@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   Animated,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,8 +16,6 @@ import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { GameCompleteOverlay } from '@/components/GameCompleteOverlay';
 import { BadgeCelebration } from '@/components/BadgeCelebration';
 import { Mascot } from '@/components/Mascot';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const WORDS = [
   { word: 'CAT', emoji: '🐱', hint: 'A furry pet that meows' },
@@ -61,6 +59,9 @@ function getLetterChoices(word: string): string[] {
 }
 
 export default function SpellingBeeScreen() {
+  const { width } = useWindowDimensions();
+  const SCREEN_WIDTH = Math.min(width, 600);
+  const TILE_SIZE = (SCREEN_WIDTH - 48 - 30) / 6;
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeGame } = useProgress();
@@ -190,7 +191,7 @@ export default function SpellingBeeScreen() {
   });
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 12, maxWidth: 600, alignSelf: 'center', width: '100%' }]}>
       {/* Header */}
       <View style={styles.header}>
         <AnimatedPressable
@@ -262,7 +263,7 @@ export default function SpellingBeeScreen() {
           return (
             <AnimatedPressable
               key={i}
-              style={[styles.letterTile, alreadyUsed && styles.letterTileUsed]}
+              style={[styles.letterTile, { width: TILE_SIZE, height: TILE_SIZE }, alreadyUsed && styles.letterTileUsed]}
               onPress={() => !alreadyUsed && handleLetterPress(letter)}
               disabled={alreadyUsed}
             >
@@ -304,8 +305,6 @@ export default function SpellingBeeScreen() {
     </View>
   );
 }
-
-const TILE_SIZE = (SCREEN_WIDTH - 48 - 30) / 6;
 
 const styles = StyleSheet.create({
   container: {
@@ -424,8 +423,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   letterTile: {
-    width: TILE_SIZE,
-    height: TILE_SIZE,
     borderRadius: 12,
     backgroundColor: KIDS_COLORS.surface,
     alignItems: 'center',

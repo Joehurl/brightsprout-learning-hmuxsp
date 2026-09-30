@@ -5,7 +5,7 @@ import {
   StyleSheet,
   PanResponder,
   Animated,
-  Dimensions,
+  useWindowDimensions,
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -19,11 +19,8 @@ import { GameCompleteOverlay } from '@/components/GameCompleteOverlay';
 import { BadgeCelebration } from '@/components/BadgeCelebration';
 import { Mascot } from '@/components/Mascot';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 const PIECE_COUNT = 6;
 const SNAP_THRESHOLD = 80;
-const DROP_SIZE = Math.floor((SCREEN_WIDTH - 48 - 32) / 3);
 const TRAY_PIECE_SIZE = 80;
 
 const PIECES = [
@@ -45,6 +42,8 @@ function shuffleArray<T>(arr: T[]): T[] {
 }
 
 export default function JigsawPuzzleScreen() {
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const DROP_SIZE = Math.floor((SCREEN_WIDTH - 48 - 32) / 3);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeGame } = useProgress();
@@ -230,9 +229,9 @@ export default function JigsawPuzzleScreen() {
                 }}
               >
                 {isSnapped ? (
-                  <SnappedDropZone piece={piece} />
+                  <SnappedDropZone piece={piece} dropSize={DROP_SIZE} />
                 ) : (
-                  <EmptyDropZone piece={piece} />
+                  <EmptyDropZone piece={piece} dropSize={DROP_SIZE} />
                 )}
               </View>
             );
@@ -351,19 +350,19 @@ function TrayPiece({ piece }: { piece: PieceData }) {
   );
 }
 
-function EmptyDropZone({ piece }: { piece: PieceData }) {
+function EmptyDropZone({ piece, dropSize }: { piece: PieceData; dropSize: number }) {
   return (
-    <View style={styles.emptyDropZone}>
-      <Text style={[styles.emptyDropZoneLabel, { color: KIDS_COLORS.shapes }]}>{piece.label}</Text>
+    <View style={[styles.emptyDropZone, { width: dropSize, height: dropSize }]}>
+      <Text style={[styles.emptyDropZoneLabel, { color: KIDS_COLORS.shapes, fontSize: dropSize * 0.35 }]}>{piece.label}</Text>
     </View>
   );
 }
 
-function SnappedDropZone({ piece }: { piece: PieceData }) {
+function SnappedDropZone({ piece, dropSize }: { piece: PieceData; dropSize: number }) {
   return (
-    <View style={[styles.snappedDropZone, { backgroundColor: piece.color }]}>
-      <Text style={styles.snappedDropZoneEmoji}>{piece.emoji}</Text>
-      <Text style={styles.snappedDropZoneLabel}>{piece.label}</Text>
+    <View style={[styles.snappedDropZone, { backgroundColor: piece.color, width: dropSize, height: dropSize }]}>
+      <Text style={[styles.snappedDropZoneEmoji, { fontSize: dropSize * 0.4 }]}>{piece.emoji}</Text>
+      <Text style={[styles.snappedDropZoneLabel, { fontSize: dropSize * 0.25 }]}>{piece.label}</Text>
     </View>
   );
 }
@@ -509,8 +508,6 @@ const styles = StyleSheet.create({
   },
   // Empty drop zone
   emptyDropZone: {
-    width: DROP_SIZE,
-    height: DROP_SIZE,
     borderRadius: 16,
     borderWidth: 3,
     borderColor: KIDS_COLORS.shapes,
@@ -521,13 +518,10 @@ const styles = StyleSheet.create({
   },
   emptyDropZoneLabel: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: DROP_SIZE * 0.35,
     opacity: 0.4,
   },
   // Snapped drop zone
   snappedDropZone: {
-    width: DROP_SIZE,
-    height: DROP_SIZE,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
@@ -535,11 +529,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0,0,0,0.15)',
   },
   snappedDropZoneEmoji: {
-    fontSize: DROP_SIZE * 0.4,
   },
   snappedDropZoneLabel: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: DROP_SIZE * 0.25,
     color: '#fff',
   },
 });

@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,9 +13,6 @@ import { useProgress } from '@/contexts/ProgressContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { Mascot } from '@/components/Mascot';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_SIZE = (SCREEN_WIDTH - 48 - 12) / 2;
 
 interface Category {
   id: string;
@@ -35,6 +32,9 @@ const CATEGORIES: Category[] = [
 ];
 
 export default function HomeScreen() {
+  const { width } = useWindowDimensions();
+  const SCREEN_WIDTH = Math.min(width, 600);
+  const CARD_SIZE = (SCREEN_WIDTH - 48 - 12) / 2;
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { progress } = useProgress();
@@ -92,14 +92,14 @@ export default function HomeScreen() {
         <Text style={styles.mainTitle}>Let's Play & Learn!</Text>
 
         {/* Category Grid */}
-        <View style={styles.grid}>
+        <View style={[styles.grid, { maxWidth: 600, alignSelf: 'center', width: '100%' }]}>
           {CATEGORIES.map((cat) => {
             const stars = getCategoryStars(cat.games);
             const maxStars = cat.games.length * 3;
             return (
               <AnimatedPressable
                 key={cat.id}
-                style={[styles.card, { backgroundColor: cat.bg }]}
+                style={[styles.card, { backgroundColor: cat.bg, width: CARD_SIZE }]}
                 onPress={() => handleCategoryPress(cat.id)}
               >
                 <Text style={styles.cardEmoji}>{cat.emoji}</Text>
@@ -202,7 +202,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   card: {
-    width: CARD_SIZE,
     aspectRatio: 1,
     borderRadius: 24,
     alignItems: 'center',

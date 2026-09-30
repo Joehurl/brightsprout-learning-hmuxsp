@@ -5,7 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   Animated,
-  Dimensions,
+  useWindowDimensions,
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -18,8 +18,6 @@ import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { GameCompleteOverlay } from '@/components/GameCompleteOverlay';
 import { Mascot } from '@/components/Mascot';
 import { playSound } from '@/utils/sounds';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const LETTER_DATA = [
   { letter: 'A', word: 'Apple', emoji: '🍎' },
@@ -75,6 +73,7 @@ const ABC_MELODY_DURATIONS = [
 
 
 export default function AlphabetAdventureScreen() {
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeGame } = useProgress();

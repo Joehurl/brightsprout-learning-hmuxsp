@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   PanResponder,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,9 +14,6 @@ import { KIDS_COLORS } from '@/constants/Colors';
 import { useProgress } from '@/contexts/ProgressContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { GameCompleteOverlay } from '@/components/GameCompleteOverlay';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CANVAS_SIZE = Math.min(SCREEN_WIDTH - 48, 320);
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
@@ -34,6 +31,8 @@ function pointsToPath(points: Point[]): string {
 }
 
 export default function LetterTraceScreen() {
+  const { width } = useWindowDimensions();
+  const CANVAS_SIZE = Math.min(width - 48, 320);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeGame } = useProgress();

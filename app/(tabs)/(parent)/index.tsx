@@ -6,7 +6,7 @@ import {
   ScrollView,
   Animated,
   Alert,
-  Dimensions,
+  useWindowDimensions,
   Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,8 +17,6 @@ import { useProgress } from '@/contexts/ProgressContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { saveProgress, defaultProgress, BADGES } from '@/utils/progress';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const AGE_GROUPS = ['2-4', '5-6', '7-8'] as const;
 
@@ -89,6 +87,9 @@ function CircularProgress({ size, progress, color, emoji, label, value }: Circul
 }
 
 export default function ParentScreen() {
+  const { width } = useWindowDimensions();
+  const statCardWidth = (width - 40 - 20) / 3;
+  const badgeItemWidth = (width - 40 - 40 - 30) / 4;
   const insets = useSafeAreaInsets();
   const { progress, refreshProgress } = useProgress();
   const { isSubscribed } = useSubscription();
@@ -279,7 +280,7 @@ export default function ParentScreen() {
             { label: 'Minutes', value: String(progress.totalMinutesPlayed), emoji: '⏱️', bg: KIDS_COLORS.lettersMuted },
             { label: 'Day Streak', value: String(progress.streak), emoji: '🔥', bg: KIDS_COLORS.animalsMuted },
           ].map(stat => (
-            <View key={stat.label} style={[styles.statCard, { backgroundColor: stat.bg }]}>
+            <View key={stat.label} style={[styles.statCard, { backgroundColor: stat.bg, width: statCardWidth }]}>
               <Text style={styles.statEmoji}>{stat.emoji}</Text>
               <Text style={styles.statValue}>{stat.value}</Text>
               <Text style={styles.statLabel}>{stat.label}</Text>
@@ -321,7 +322,7 @@ export default function ParentScreen() {
             {BADGES.map(badge => {
               const isEarned = earnedBadges.includes(badge.id);
               return (
-                <View key={badge.id} style={[styles.badgeGridItem, !isEarned && styles.badgeGridItemLocked]}>
+                <View key={badge.id} style={[styles.badgeGridItem, { width: badgeItemWidth }, !isEarned && styles.badgeGridItemLocked]}>
                   <Text style={styles.badgeGridEmoji}>{isEarned ? badge.emoji : '🔒'}</Text>
                   <Text style={[styles.badgeGridName, !isEarned && styles.badgeGridNameLocked]} numberOfLines={2}>
                     {badge.name}
@@ -612,7 +613,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   statCard: {
-    width: (SCREEN_WIDTH - 40 - 20) / 3,
     borderRadius: 20,
     padding: 14,
     alignItems: 'center',
@@ -705,7 +705,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   badgeGridItem: {
-    width: (SCREEN_WIDTH - 40 - 40 - 30) / 4,
     alignItems: 'center',
     gap: 4,
     backgroundColor: KIDS_COLORS.background,

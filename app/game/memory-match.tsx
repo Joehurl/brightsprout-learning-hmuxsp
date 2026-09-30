@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   Animated,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,10 +18,8 @@ import { GameCompleteOverlay } from '@/components/GameCompleteOverlay';
 import { BadgeCelebration } from '@/components/BadgeCelebration';
 import { Mascot } from '@/components/Mascot';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_MARGIN = 6;
 const COLS = 4;
-const CARD_SIZE = (SCREEN_WIDTH - 48 - CARD_MARGIN * (COLS - 1)) / COLS;
 
 const SHAPE_PAIRS = ['circle', 'square', 'triangle', 'star', 'heart', 'diamond'] as const;
 type ShapeId = typeof SHAPE_PAIRS[number];
@@ -131,9 +129,10 @@ interface CardProps {
   isMatched: boolean;
   onPress: () => void;
   flipAnim: Animated.Value;
+  cardSize: number;
 }
 
-function MemoryCard({ card, isFlipped, isMatched, onPress, flipAnim }: CardProps) {
+function MemoryCard({ card, isFlipped, isMatched, onPress, flipAnim, cardSize }: CardProps) {
   const frontRotate = flipAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '180deg'],
@@ -151,11 +150,11 @@ function MemoryCard({ card, isFlipped, isMatched, onPress, flipAnim }: CardProps
     outputRange: [0, 0, 1],
   });
 
-  const shapeSize = CARD_SIZE * 0.55;
+  const shapeSize = cardSize * 0.55;
 
   return (
     <AnimatedPressable
-      style={[styles.cardContainer, isMatched && styles.cardMatched]}
+      style={[styles.cardContainer, { width: cardSize, height: cardSize }, isMatched && styles.cardMatched]}
       onPress={onPress}
       disabled={isFlipped || isMatched}
     >
@@ -185,6 +184,9 @@ function MemoryCard({ card, isFlipped, isMatched, onPress, flipAnim }: CardProps
 }
 
 export default function MemoryMatchScreen() {
+  const { width } = useWindowDimensions();
+  const SCREEN_WIDTH = Math.min(width, 600);
+  const CARD_SIZE = (SCREEN_WIDTH - 48 - CARD_MARGIN * (COLS - 1)) / COLS;
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeGame } = useProgress();
@@ -284,7 +286,7 @@ export default function MemoryMatchScreen() {
   const starsLabel = earnedStars === 3 ? '⭐⭐⭐ Amazing!' : earnedStars === 2 ? '⭐⭐ Great job!' : '⭐ You did it!';
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 12, maxWidth: 600, alignSelf: 'center', width: '100%' }]}>
       <View style={styles.header}>
         <AnimatedPressable
           style={styles.backBtn}
@@ -317,6 +319,7 @@ export default function MemoryMatchScreen() {
             isMatched={matchedPairs.has(card.pairId)}
             onPress={() => handleCardPress(index)}
             flipAnim={flipAnims[index]}
+            cardSize={CARD_SIZE}
           />
         ))}
       </View>
@@ -407,8 +410,6 @@ const styles = StyleSheet.create({
     alignContent: 'center',
   },
   cardContainer: {
-    width: CARD_SIZE,
-    height: CARD_SIZE,
     borderRadius: 14,
     overflow: 'hidden',
   },
