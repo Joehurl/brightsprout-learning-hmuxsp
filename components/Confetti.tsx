@@ -50,7 +50,7 @@ export function Confetti({ visible }: ConfettiProps) {
   if (!visible) return null;
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
       {dots.map((dot, i) => {
         const translateY = animations[i].interpolate({
           inputRange: [0, 1],

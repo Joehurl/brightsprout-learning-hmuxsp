@@ -224,7 +224,7 @@ export default function DrawingCanvasScreen() {
         </Svg>
 
         {paths.length === 0 && currentPath === '' && (
-          <View style={styles.canvasPlaceholder} pointerEvents="none">
+          <View style={[styles.canvasPlaceholder, { pointerEvents: 'none' }]}>
             <Text style={styles.canvasPlaceholderText}>Draw something! ✏️</Text>
           </View>
         )}

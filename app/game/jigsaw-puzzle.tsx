@@ -262,9 +262,9 @@ export default function JigsawPuzzleScreen() {
                     transform: [{ scale: bounceAnims[pieceId] }],
                     zIndex: isSnapped ? 0 : 10,
                     opacity: pieceOpacity,
+                    pointerEvents: isSnapped ? 'none' : 'auto',
                   },
                 ]}
-                pointerEvents={isSnapped ? 'none' : 'auto'}
                 ref={(ref) => {
                   if (ref && !hasMeasured.current[pieceId]) {
                     setTimeout(() => {
@@ -308,10 +308,10 @@ export default function JigsawPuzzleScreen() {
           maps to true screen origin. dragOverlayPos holds screen coords. */}
       {draggingPiece !== null && (
         <Animated.View
-          pointerEvents="none"
           style={[
             styles.dragOverlay,
             {
+              pointerEvents: 'none',
               transform: [
                 { translateX: dragOverlayPos.x },
                 { translateY: dragOverlayPos.y },
