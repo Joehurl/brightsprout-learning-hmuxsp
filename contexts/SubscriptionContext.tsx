@@ -27,14 +27,28 @@ import React, {
   ReactNode,
 } from "react";
 import { Platform } from "react-native";
-import Purchases, {
+// Type-only imports are erased at runtime — safe to use even on web
+import type {
   PurchasesOfferings,
   PurchasesOffering,
   PurchasesPackage,
-  LOG_LEVEL,
 } from "react-native-purchases";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
+
+// react-native-purchases is a native-only module.
+// The .web.tsx platform file handles web — this file is only active on iOS/Android.
+// Platform.OS check lets Metro statically tree-shake this require out of the web bundle.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let Purchases: any = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let LOG_LEVEL: any = {};
+if (Platform.OS !== "web") {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+  const RCModule = require("react-native-purchases");
+  Purchases = RCModule.default ?? RCModule;
+  LOG_LEVEL = RCModule.LOG_LEVEL ?? {};
+}
 
 // Read API keys from app.json (expo.extra)
 const extra = Constants.expoConfig?.extra || {};
@@ -181,7 +195,8 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         await Purchases.configure({ apiKey });
 
         // Listen for real-time subscription changes (e.g., purchase from another device)
-        customerInfoListener = Purchases.addCustomerInfoUpdateListener(
+        // Cast needed because the web stub's JS return type is inferred as void by TS.
+        customerInfoListener = (Purchases.addCustomerInfoUpdateListener(
           (customerInfo) => {
             const hasEntitlement =
               typeof customerInfo.entitlements.active[ENTITLEMENT_ID] !==
@@ -192,7 +207,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
               setIsSubscribed(hasEntitlement);
             }
           }
-        );
+        ) as unknown) as { remove: () => void } | null;
 
         // Fetch available products/packages
         await fetchOfferings();
@@ -200,8 +215,20 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         // Check initial subscription status
         await checkSubscription();
       } catch (error) {
-        console.error("[RevenueCat] Failed to initialize:", error);
+        // Purchases.configure() throws an empty object `{}` in Expo Go because the
+        // native module is unavailable. Stringify so the log is actually useful.
+        const errMsg =
+          error && typeof error === "object" && Object.keys(error as object).length === 0
+            ? "native module unavailable (Expo Go)"
+            : String(error);
+        console.error("[RevenueCat] Failed to initialize:", errMsg);
+        // Ensure safe fallback state so the rest of the app never sees undefined data
+        setPackages([]);
+        setOfferings(null);
+        setCurrentOffering(null);
+        setLoading(false);
       } finally {
+        // Belt-and-suspenders: always clear loading even if the catch branch already did
         setLoading(false);
       }
     };

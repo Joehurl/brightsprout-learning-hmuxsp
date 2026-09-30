@@ -19,7 +19,10 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { PurchasesPackage } from "react-native-purchases";
+// import type is erased at compile time — it never causes the native module to be
+// evaluated at runtime, so this is safe on web even though react-native-purchases
+// has no web shim.
+import type { PurchasesPackage } from "react-native-purchases";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { KIDS_COLORS } from "@/constants/Colors";
@@ -448,8 +451,12 @@ export default function PaywallScreen() {
             {/* CTA button */}
             {isWeb ? (
               <AnimatedPressable
-                style={styles.unlockBtn}
+                style={[
+                  styles.unlockBtn,
+                  !selectedPackage && styles.btnDisabled,
+                ]}
                 onPress={handleWebMockPurchase}
+                disabled={!selectedPackage}
               >
                 <Text style={styles.unlockBtnText}>{ctaLabel}</Text>
               </AnimatedPressable>
