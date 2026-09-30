@@ -2,7 +2,7 @@
   "expo": {
     "name": "BrightSprout",
     "slug": "brightsprout",
-    "version": "1.0.0",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -58,6 +58,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.brightsprout.learning",
+      "buildNumber": "15",
       "supportsTablet": true,
       "infoPlist": {
         "NSHumanReadableCopyright": "\u00a9 2025 BrightSprout",
