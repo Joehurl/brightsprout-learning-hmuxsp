@@ -48,6 +48,8 @@ function SubscriptionRedirect() {
     if (loading) return;
     const onOnboarding = pathname.startsWith("/onboarding");
     if (onOnboarding) return;
+    const onGame = pathname.startsWith("/game");
+    if (onGame) return;
 
     let cancelled = false;
     isOnboardingComplete().then((done) => {
@@ -56,6 +58,7 @@ function SubscriptionRedirect() {
       const onPaywall = pathname === "/paywall";
       if (onPaywall) return;
       if (!isSubscribed) {
+        console.log("[SubscriptionRedirect] Redirecting to paywall from", pathname);
         router.replace("/paywall");
       }
     }).catch(() => {
@@ -63,6 +66,7 @@ function SubscriptionRedirect() {
       const onPaywall = pathname === "/paywall";
       if (onPaywall) return;
       if (!isSubscribed) {
+        console.log("[SubscriptionRedirect] Redirecting to paywall from", pathname, "(onboarding check failed)");
         router.replace("/paywall");
       }
     });
@@ -141,7 +145,6 @@ function RootLayoutInner() {
 
   return (
     <DevErrorBoundary>
-      <SubscriptionRedirect />
       <StatusBar style="auto" animated />
       <ThemeProvider
         value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}
@@ -151,6 +154,7 @@ function RootLayoutInner() {
             <ProgressProvider>
               <GestureHandlerRootView>
                 {onboardingComplete === false && pathname !== "/auth" && pathname !== "/paywall" && pathname !== "/auth-popup" && pathname !== "/auth-callback" && <Redirect href="/onboarding" />}
+                <SubscriptionRedirect />
 
                 <Stack>
                   <Stack.Screen name="onboarding" options={{ headerShown: false }} />
