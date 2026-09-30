@@ -107,7 +107,15 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       },
     };
 
-    setPackages([mockPackage] as PurchasesPackage[]);
+    const mockMonthly = {
+      identifier: "$rc_monthly",
+      product: {
+        title: "BrightSprout Monthly",
+        priceString: "$1.99",
+        description: "Full access, cancel anytime",
+      },
+    };
+    setPackages([mockMonthly, mockPackage] as PurchasesPackage[]);
     console.log("[revenuecat] Web preview: showing real prices from dashboard");
   };
 

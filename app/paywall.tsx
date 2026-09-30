@@ -1,6 +1,6 @@
 /**
  * BrightSprout Paywall Screen
- * One-time lifetime purchase — pay once, own forever.
+ * Monthly subscription or one-time lifetime purchase.
  */
 
 import React, { useRef, useEffect, useState, useWindowDimensions } from "react";
@@ -37,7 +37,7 @@ const FREE_GAMES_LIST = [
   "Animal Sounds",
 ];
 
-// What unlocks with the one-time purchase
+// What unlocks with purchase
 const UNLOCK_FEATURES = [
   { emoji: "🎮", text: "14 games total — all games" },
   { emoji: "🏆", text: "Badges & rewards system" },
@@ -48,26 +48,57 @@ const UNLOCK_FEATURES = [
 
 const FLOATING_EMOJIS = ["🔤", "📚", "🔢", "🎨", "🦁", "🎵"];
 
-function FloatingEmoji({ emoji, position, delay }: { emoji: string; position: { top: number; left: number }; delay: number }) {
+function isMonthlyPackage(pkg: PurchasesPackage): boolean {
+  const id = pkg.identifier.toLowerCase();
+  return id.includes("monthly") || id.includes("$rc_monthly");
+}
+
+function isLifetimePackage(pkg: PurchasesPackage): boolean {
+  const id = pkg.identifier.toLowerCase();
+  return id.includes("lifetime") || id.includes("$rc_lifetime");
+}
+
+function FloatingEmoji({
+  emoji,
+  position,
+  delay,
+}: {
+  emoji: string;
+  position: { top: number; left: number };
+  delay: number;
+}) {
   const floatAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(floatAnim, { toValue: -10, duration: 1800, delay, useNativeDriver: true }),
-        Animated.timing(floatAnim, { toValue: 0, duration: 1800, useNativeDriver: true }),
+        Animated.timing(floatAnim, {
+          toValue: -10,
+          duration: 1800,
+          delay,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 1800,
+          useNativeDriver: true,
+        }),
       ])
     );
     loop.start();
     return () => loop.stop();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <Animated.Text
       style={[
         styles.floatingEmoji,
-        { top: position.top, left: position.left, transform: [{ translateY: floatAnim }] },
+        {
+          top: position.top,
+          left: position.left,
+          transform: [{ translateY: floatAnim }],
+        },
       ]}
     >
       {emoji}
@@ -98,15 +129,34 @@ export default function PaywallScreen() {
     mockNativePurchase,
   } = useSubscription();
 
-  const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
+  const [planType, setPlanType] = useState<"monthly" | "lifetime">("lifetime");
+  const [selectedPackage, setSelectedPackage] =
+    useState<PurchasesPackage | null>(null);
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
+  // Derive monthly and lifetime packages from RC packages array
+  const monthlyPkg = packages.find(isMonthlyPackage) ?? null;
+  const lifetimePkg = packages.find(isLifetimePackage) ?? null;
+
+  // Auto-select lifetime package on load; fall back to monthly if only that exists
   useEffect(() => {
-    if (packages.length > 0 && !selectedPackage) {
-      setSelectedPackage(packages[0]);
+    if (packages.length === 0) return;
+    if (lifetimePkg) {
+      setPlanType("lifetime");
+      setSelectedPackage(lifetimePkg);
+    } else if (monthlyPkg) {
+      setPlanType("monthly");
+      setSelectedPackage(monthlyPkg);
     }
-  }, [packages, selectedPackage]);
+  }, [packages.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSelectPlan = (type: "monthly" | "lifetime") => {
+    const pkg = type === "monthly" ? monthlyPkg : lifetimePkg;
+    console.log("[Paywall] Plan card tapped:", type, "package:", pkg?.identifier ?? "unavailable");
+    setPlanType(type);
+    setSelectedPackage(pkg);
+  };
 
   const handleClose = () => {
     console.log("[Paywall] Close button pressed — returning to home (free preview)");
@@ -115,19 +165,37 @@ export default function PaywallScreen() {
 
   const handlePurchase = async () => {
     if (!selectedPackage) return;
-    console.log("[Paywall] Unlock button pressed, package:", selectedPackage.identifier);
+    console.log(
+      "[Paywall] Unlock button pressed, plan:",
+      planType,
+      "package:",
+      selectedPackage.identifier
+    );
     try {
       setPurchasing(true);
       const success = await purchasePackage(selectedPackage);
       console.log("[Paywall] Purchase result:", success);
       if (success) {
-        Alert.alert("You Own BrightSprout! 🎉", "All 14 games are now unlocked forever!", [
-          { text: "Start Learning 🚀", onPress: () => router.replace("/(tabs)/(home)") },
+        const title =
+          planType === "monthly"
+            ? "BrightSprout Unlocked! 🎉"
+            : "You Own BrightSprout! 🎉";
+        const message =
+          planType === "monthly"
+            ? "All 14 games are now unlocked!"
+            : "All 14 games are now unlocked forever!";
+        Alert.alert(title, message, [
+          {
+            text: "Start Learning 🚀",
+            onPress: () => router.replace("/(tabs)/(home)"),
+          },
         ]);
       }
     } catch (error: any) {
       console.log("[Paywall] Purchase error:", error?.message);
-      Alert.alert("Oops! Something went wrong.", "Please try again.", [{ text: "OK" }]);
+      Alert.alert("Oops! Something went wrong.", "Please try again.", [
+        { text: "OK" },
+      ]);
     } finally {
       setPurchasing(false);
     }
@@ -141,10 +209,16 @@ export default function PaywallScreen() {
       console.log("[Paywall] Restore result:", restored);
       if (restored) {
         Alert.alert("Restored! 🎉", "Your purchase has been restored.", [
-          { text: "Start Learning 🚀", onPress: () => router.replace("/(tabs)/(home)") },
+          {
+            text: "Start Learning 🚀",
+            onPress: () => router.replace("/(tabs)/(home)"),
+          },
         ]);
       } else {
-        Alert.alert("No Purchase Found", "We couldn't find a previous purchase to restore.");
+        Alert.alert(
+          "No Purchase Found",
+          "We couldn't find a previous purchase to restore."
+        );
       }
     } catch (error: any) {
       console.log("[Paywall] Restore error:", error?.message);
@@ -155,10 +229,18 @@ export default function PaywallScreen() {
   };
 
   const handleWebMockPurchase = async () => {
-    console.log("[Paywall] Web mock purchase pressed");
+    console.log("[Paywall] Web mock purchase pressed, plan:", planType);
     mockWebPurchase();
     router.replace("/(tabs)/(home)");
   };
+
+  // Derive CTA label
+  const monthlyPrice = monthlyPkg?.product?.priceString ?? "$1.99";
+  const lifetimePrice = lifetimePkg?.product?.priceString ?? "$4.99";
+  const ctaLabel =
+    planType === "monthly"
+      ? `Start Monthly — ${monthlyPrice}/mo`
+      : `Unlock Forever — ${lifetimePrice}`;
 
   // Already purchased / unlocked
   if (isSubscribed) {
@@ -177,7 +259,9 @@ export default function PaywallScreen() {
           <View style={styles.ownedContent}>
             <Text style={styles.celebrationEmoji}>🎉</Text>
             <Text style={styles.ownedTitle}>You Own BrightSprout!</Text>
-            <Text style={styles.ownedSubtitle}>All 14 games are unlocked forever!</Text>
+            <Text style={styles.ownedSubtitle}>
+              All 14 games are unlocked forever!
+            </Text>
             <AnimatedPressable style={styles.exploreBtn} onPress={handleClose}>
               <Text style={styles.exploreBtnText}>Start Learning 🚀</Text>
             </AnimatedPressable>
@@ -207,8 +291,10 @@ export default function PaywallScreen() {
     );
   }
 
-  const priceString = selectedPackage?.product?.priceString ?? "$4.99";
-  const ctaLabel = purchasing ? "" : `Unlock Everything — ${priceString}`;
+  const isMonthlySelected = planType === "monthly";
+  const isLifetimeSelected = planType === "lifetime";
+  const monthlyUnavailable = !monthlyPkg;
+  const lifetimeUnavailable = !lifetimePkg;
 
   return (
     <View style={styles.container}>
@@ -245,18 +331,19 @@ export default function PaywallScreen() {
               <View style={styles.heroCenter}>
                 <Mascot size={110} animate={true} expression="excited" />
                 <Text style={styles.heroTitle}>BrightSprout</Text>
-                <Text style={styles.heroSubtitle}>Own it forever 🌱</Text>
+                <Text style={styles.heroSubtitle}>Unlock everything 🌱</Text>
               </View>
             </LinearGradient>
           </View>
 
           {/* ── Content ── */}
           <View style={styles.content}>
-
             {/* Free preview card */}
             <View style={styles.freePreviewCard}>
               <Text style={styles.freePreviewTitle}>✅ Free Forever</Text>
-              <Text style={styles.freePreviewSubtitle}>5 games — no purchase needed</Text>
+              <Text style={styles.freePreviewSubtitle}>
+                5 games — no purchase needed
+              </Text>
               <View style={styles.freeGamesList}>
                 {FREE_GAMES_LIST.map((name, i) => (
                   <View key={i} style={styles.freeGameRow}>
@@ -280,23 +367,98 @@ export default function PaywallScreen() {
               ))}
             </View>
 
-            {/* Price badge */}
-            <View style={styles.priceBadgeWrapper}>
-              <View style={styles.priceBadge}>
-                <Text style={styles.priceBadgeAmount}>$4.99</Text>
+            {/* ── Plan Cards ── */}
+            <Text style={styles.choosePlanLabel}>Choose your plan</Text>
+
+            {/* Monthly Card */}
+            <TouchableOpacity
+              style={[
+                styles.planCard,
+                isMonthlySelected && styles.planCardSelected,
+                monthlyUnavailable && styles.planCardDisabled,
+              ]}
+              onPress={() => handleSelectPlan("monthly")}
+              disabled={monthlyUnavailable}
+              activeOpacity={0.8}
+            >
+              {/* Radio */}
+              <View
+                style={[
+                  styles.radioOuter,
+                  isMonthlySelected && styles.radioOuterSelected,
+                ]}
+              >
+                {isMonthlySelected && <View style={styles.radioInner} />}
               </View>
-              <Text style={styles.priceTagline}>One-time purchase • No subscription • No recurring charges</Text>
-              <Text style={styles.priceOwnership}>Own BrightSprout forever — pay once, play always</Text>
-            </View>
+
+              {/* Plan info */}
+              <View style={styles.planInfo}>
+                <Text style={styles.planName}>Monthly</Text>
+                <Text style={styles.planTagline}>Cancel anytime</Text>
+              </View>
+
+              {/* Price */}
+              <View style={styles.planPriceBlock}>
+                <Text style={styles.planPrice}>{monthlyPrice}</Text>
+                <Text style={styles.planPricePer}>/month</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Lifetime Card */}
+            <TouchableOpacity
+              style={[
+                styles.planCard,
+                isLifetimeSelected && styles.planCardSelected,
+                lifetimeUnavailable && styles.planCardDisabled,
+              ]}
+              onPress={() => handleSelectPlan("lifetime")}
+              disabled={lifetimeUnavailable}
+              activeOpacity={0.8}
+            >
+              {/* Radio */}
+              <View
+                style={[
+                  styles.radioOuter,
+                  isLifetimeSelected && styles.radioOuterSelected,
+                ]}
+              >
+                {isLifetimeSelected && <View style={styles.radioInner} />}
+              </View>
+
+              {/* Plan info */}
+              <View style={styles.planInfo}>
+                <View style={styles.planNameRow}>
+                  <Text style={styles.planName}>Lifetime</Text>
+                  <View style={styles.bestValueBadge}>
+                    <Text style={styles.bestValueText}>BEST VALUE</Text>
+                  </View>
+                </View>
+                <Text style={styles.planTagline}>
+                  Best value • Pay once, own forever
+                </Text>
+              </View>
+
+              {/* Price */}
+              <View style={styles.planPriceBlock}>
+                <Text style={styles.planPrice}>{lifetimePrice}</Text>
+                <Text style={styles.planPricePer}>once</Text>
+              </View>
+            </TouchableOpacity>
 
             {/* CTA button */}
             {isWeb ? (
-              <AnimatedPressable style={styles.unlockBtn} onPress={handleWebMockPurchase}>
-                <Text style={styles.unlockBtnText}>Unlock Everything — $4.99</Text>
+              <AnimatedPressable
+                style={styles.unlockBtn}
+                onPress={handleWebMockPurchase}
+              >
+                <Text style={styles.unlockBtnText}>{ctaLabel}</Text>
               </AnimatedPressable>
             ) : (
               <AnimatedPressable
-                style={[styles.unlockBtn, (purchasing || !selectedPackage) && styles.btnDisabled]}
+                style={[
+                  styles.unlockBtn,
+                  (purchasing || !selectedPackage) && styles.btnDisabled,
+                ]}
                 onPress={handlePurchase}
                 disabled={purchasing || !selectedPackage}
               >
@@ -323,16 +485,25 @@ export default function PaywallScreen() {
                       router.replace("/(tabs)/(home)");
                     }}
                   >
-                    <Text style={styles.devMockBtnText}>Dev: Simulate Purchase</Text>
+                    <Text style={styles.devMockBtnText}>
+                      Dev: Simulate Purchase
+                    </Text>
                   </TouchableOpacity>
                 )}
               </View>
             )}
 
             {/* Restore Purchase */}
-            <TouchableOpacity style={styles.restoreBtn} onPress={handleRestore} disabled={restoring}>
+            <TouchableOpacity
+              style={styles.restoreBtn}
+              onPress={handleRestore}
+              disabled={restoring}
+            >
               {restoring ? (
-                <ActivityIndicator size="small" color={KIDS_COLORS.textSecondary} />
+                <ActivityIndicator
+                  size="small"
+                  color={KIDS_COLORS.textSecondary}
+                />
               ) : (
                 <Text style={styles.restoreBtnText}>Restore Purchase</Text>
               )}
@@ -340,11 +511,21 @@ export default function PaywallScreen() {
 
             {/* Privacy Policy & Terms links */}
             <View style={styles.legalLinksRow}>
-              <TouchableOpacity onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}>
+              <TouchableOpacity
+                onPress={() => {
+                  console.log("[Paywall] Privacy Policy link pressed");
+                  Linking.openURL(PRIVACY_POLICY_URL);
+                }}
+              >
                 <Text style={styles.legalLink}>Privacy Policy</Text>
               </TouchableOpacity>
               <Text style={styles.legalLinkSep}>·</Text>
-              <TouchableOpacity onPress={() => Linking.openURL(TERMS_URL)}>
+              <TouchableOpacity
+                onPress={() => {
+                  console.log("[Paywall] Terms of Service link pressed");
+                  Linking.openURL(TERMS_URL);
+                }}
+              >
                 <Text style={styles.legalLink}>Terms of Service</Text>
               </TouchableOpacity>
             </View>
@@ -352,10 +533,10 @@ export default function PaywallScreen() {
             {/* Legal */}
             <Text style={styles.legalText}>
               {Platform.OS === "android"
-                ? "One-time purchase. No subscription. Payment charged to your Google Play account."
+                ? "Payment charged to your Google Play account. Subscriptions auto-renew unless cancelled."
                 : Platform.OS === "ios"
-                  ? "One-time purchase. No subscription. Payment charged to your Apple ID."
-                  : "One-time purchase. No subscription. Payment charged to your account."}
+                  ? "Payment charged to your Apple ID. Subscriptions auto-renew unless cancelled."
+                  : "Payment charged to your account. Subscriptions auto-renew unless cancelled."}
             </Text>
           </View>
         </ScrollView>
@@ -522,43 +703,105 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Price badge
-  priceBadgeWrapper: {
-    alignItems: "center",
-    marginBottom: 24,
-    gap: 8,
+  // ── Plan Cards ──
+  choosePlanLabel: {
+    fontFamily: "Nunito_800ExtraBold",
+    fontSize: 18,
+    color: KIDS_COLORS.text,
+    marginBottom: 12,
   },
-  priceBadge: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: KIDS_COLORS.accent,
+  planCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: "#E5E7EB",
+    padding: 16,
+    marginBottom: 12,
+    gap: 14,
+  },
+  planCardSelected: {
+    borderColor: KIDS_COLORS.primary,
+    borderWidth: 2,
+    backgroundColor: `${KIDS_COLORS.primary}0D`,
+  },
+  planCardDisabled: {
+    opacity: 0.45,
+  },
+
+  // Radio
+  radioOuter: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: "#D1D5DB",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: KIDS_COLORS.accent,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 10,
-    marginBottom: 4,
+    flexShrink: 0,
   },
-  priceBadgeAmount: {
+  radioOuterSelected: {
+    borderColor: KIDS_COLORS.primary,
+  },
+  radioInner: {
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+    backgroundColor: KIDS_COLORS.primary,
+  },
+
+  // Plan info
+  planInfo: {
+    flex: 1,
+    gap: 3,
+  },
+  planNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  planName: {
     fontFamily: "Nunito_800ExtraBold",
-    fontSize: 34,
+    fontSize: 16,
     color: KIDS_COLORS.text,
   },
-  priceTagline: {
-    fontFamily: "Nunito_600SemiBold",
-    fontSize: 13,
+  planTagline: {
+    fontFamily: "Nunito_400Regular",
+    fontSize: 12,
     color: KIDS_COLORS.textSecondary,
-    textAlign: "center",
-    lineHeight: 20,
+    lineHeight: 17,
   },
-  priceOwnership: {
-    fontFamily: "Nunito_700Bold",
-    fontSize: 15,
+
+  // Best value badge
+  bestValueBadge: {
+    backgroundColor: KIDS_COLORS.accent,
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  bestValueText: {
+    fontFamily: "Nunito_800ExtraBold",
+    fontSize: 9,
     color: KIDS_COLORS.text,
-    textAlign: "center",
+    letterSpacing: 0.5,
+  },
+
+  // Price block
+  planPriceBlock: {
+    alignItems: "flex-end",
+    flexShrink: 0,
+  },
+  planPrice: {
+    fontFamily: "Nunito_800ExtraBold",
+    fontSize: 20,
+    color: KIDS_COLORS.text,
+  },
+  planPricePer: {
+    fontFamily: "Nunito_400Regular",
+    fontSize: 11,
+    color: KIDS_COLORS.textSecondary,
   },
 
   // Unlock button
@@ -574,10 +817,11 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
     marginBottom: 12,
+    marginTop: 4,
   },
   unlockBtnText: {
     fontFamily: "Nunito_800ExtraBold",
-    fontSize: 20,
+    fontSize: 18,
     color: "#fff",
   },
   btnDisabled: {
