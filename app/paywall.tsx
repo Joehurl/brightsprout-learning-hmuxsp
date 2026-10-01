@@ -456,20 +456,7 @@ export default function PaywallScreen() {
                 <Text style={styles.noPackagesText}>
                   Purchases require a development or production build.
                 </Text>
-                {__DEV__ && (
-                  <TouchableOpacity
-                    style={styles.devMockBtn}
-                    onPress={async () => {
-                      console.log("[Paywall] Dev simulate purchase pressed");
-                      await mockNativePurchase();
-                      router.replace("/(tabs)/(home)");
-                    }}
-                  >
-                    <Text style={styles.devMockBtnText}>
-                      Dev: Simulate Purchase
-                    </Text>
-                  </TouchableOpacity>
-                )}
+
               </View>
             )}
 
