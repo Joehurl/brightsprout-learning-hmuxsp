@@ -83,7 +83,7 @@ export default function HomeScreen() {
             <Text style={styles.premiumBannerEmoji}>🔓</Text>
             <View style={styles.premiumBannerText}>
               <Text style={styles.premiumBannerTitle}>Unlock All Games</Text>
-              <Text style={styles.premiumBannerSub}>From $1.99/mo • Cancel anytime</Text>
+              <Text style={styles.premiumBannerSub}>$1.99/mo or $4.99/yr • Cancel anytime</Text>
             </View>
             <Text style={styles.premiumBannerArrow}>›</Text>
           </AnimatedPressable>
