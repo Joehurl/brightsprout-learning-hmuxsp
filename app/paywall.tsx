@@ -1,6 +1,6 @@
 /**
  * BrightSprout Paywall Screen
- * Monthly subscription or one-time lifetime purchase.
+ * Monthly or Annual subscription.
  */
 
 import React, { useRef, useEffect, useState } from "react";
@@ -47,7 +47,7 @@ const UNLOCK_FEATURES = [
   { emoji: "🏆", text: "Badges & rewards system" },
   { emoji: "📊", text: "Parent progress dashboard" },
   { emoji: "🔮", text: "All future games included" },
-  { emoji: "♾️", text: "One-time payment — yours forever" },
+  { emoji: "💰", text: "Annual plan saves 79% vs monthly" },
 ];
 
 const FLOATING_EMOJIS = ["🔤", "📚", "🔢", "🎨", "🦁", "🎵"];
@@ -57,9 +57,9 @@ function isMonthlyPackage(pkg: PurchasesPackage): boolean {
   return id.includes("monthly") || id.includes("$rc_monthly");
 }
 
-function isLifetimePackage(pkg: PurchasesPackage): boolean {
+function isAnnualPackage(pkg: PurchasesPackage): boolean {
   const id = pkg.identifier.toLowerCase();
-  return id.includes("lifetime") || id.includes("$rc_lifetime");
+  return id.includes("annual") || id.includes("yearly") || id.includes("$rc_annual");
 }
 
 function FloatingEmoji({
@@ -133,30 +133,30 @@ export default function PaywallScreen() {
     mockNativePurchase,
   } = useSubscription();
 
-  const [planType, setPlanType] = useState<"monthly" | "lifetime">("lifetime");
+  const [planType, setPlanType] = useState<"monthly" | "annual">("annual");
   const [selectedPackage, setSelectedPackage] =
     useState<PurchasesPackage | null>(null);
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
-  // Derive monthly and lifetime packages from RC packages array
+  // Derive monthly and annual packages from RC packages array
   const monthlyPkg = packages.find(isMonthlyPackage) ?? null;
-  const lifetimePkg = packages.find(isLifetimePackage) ?? null;
+  const annualPkg = packages.find(isAnnualPackage) ?? null;
 
-  // Auto-select lifetime package on load; fall back to monthly if only that exists
+  // Auto-select annual package on load; fall back to monthly if only that exists
   useEffect(() => {
     if (packages.length === 0) return;
-    if (lifetimePkg) {
-      setPlanType("lifetime");
-      setSelectedPackage(lifetimePkg);
+    if (annualPkg) {
+      setPlanType("annual");
+      setSelectedPackage(annualPkg);
     } else if (monthlyPkg) {
       setPlanType("monthly");
       setSelectedPackage(monthlyPkg);
     }
   }, [packages.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSelectPlan = (type: "monthly" | "lifetime") => {
-    const pkg = type === "monthly" ? monthlyPkg : lifetimePkg;
+  const handleSelectPlan = (type: "monthly" | "annual") => {
+    const pkg = type === "monthly" ? monthlyPkg : annualPkg;
     console.log("[Paywall] Plan card tapped:", type, "package:", pkg?.identifier ?? "unavailable");
     setPlanType(type);
     setSelectedPackage(pkg);
@@ -180,14 +180,11 @@ export default function PaywallScreen() {
       const success = await purchasePackage(selectedPackage);
       console.log("[Paywall] Purchase result:", success);
       if (success) {
-        const title =
-          planType === "monthly"
-            ? "BrightSprout Unlocked! 🎉"
-            : "You Own BrightSprout! 🎉";
+        const title = "BrightSprout Unlocked! 🎉";
         const message =
           planType === "monthly"
             ? "All 14 games are now unlocked!"
-            : "All 14 games are now unlocked forever!";
+            : "All 14 games are now unlocked for a year!";
         Alert.alert(title, message, [
           {
             text: "Start Learning 🚀",
@@ -240,11 +237,11 @@ export default function PaywallScreen() {
 
   // Derive CTA label
   const monthlyPrice = monthlyPkg?.product?.priceString ?? "$1.99";
-  const lifetimePrice = lifetimePkg?.product?.priceString ?? "$4.99";
+  const annualPrice = annualPkg?.product?.priceString ?? "$4.99";
   const ctaLabel =
     planType === "monthly"
       ? `Start Monthly — ${monthlyPrice}/mo`
-      : `Unlock Forever — ${lifetimePrice}`;
+      : `Start Annual — ${annualPrice}/yr`;
 
   // Already purchased / unlocked
   if (isSubscribed) {
@@ -262,9 +259,9 @@ export default function PaywallScreen() {
           </TouchableOpacity>
           <View style={styles.ownedContent}>
             <Text style={styles.celebrationEmoji}>🎉</Text>
-            <Text style={styles.ownedTitle}>You Own BrightSprout!</Text>
+            <Text style={styles.ownedTitle}>BrightSprout Unlocked!</Text>
             <Text style={styles.ownedSubtitle}>
-              All 14 games are unlocked forever!
+              All 14 games are now unlocked!
             </Text>
             <AnimatedPressable style={styles.exploreBtn} onPress={handleClose}>
               <Text style={styles.exploreBtnText}>Start Learning 🚀</Text>
@@ -296,9 +293,9 @@ export default function PaywallScreen() {
   }
 
   const isMonthlySelected = planType === "monthly";
-  const isLifetimeSelected = planType === "lifetime";
+  const isAnnualSelected = planType === "annual";
   const monthlyUnavailable = !monthlyPkg;
-  const lifetimeUnavailable = !lifetimePkg;
+  const annualUnavailable = !annualPkg;
 
   return (
     <View style={styles.container}>
@@ -408,44 +405,44 @@ export default function PaywallScreen() {
               </View>
             </TouchableOpacity>
 
-            {/* Lifetime Card */}
+            {/* Annual Card */}
             <TouchableOpacity
               style={[
                 styles.planCard,
-                isLifetimeSelected && styles.planCardSelected,
-                lifetimeUnavailable && styles.planCardDisabled,
+                isAnnualSelected && styles.planCardSelected,
+                annualUnavailable && styles.planCardDisabled,
               ]}
-              onPress={() => handleSelectPlan("lifetime")}
-              disabled={lifetimeUnavailable}
+              onPress={() => handleSelectPlan("annual")}
+              disabled={annualUnavailable}
               activeOpacity={0.8}
             >
               {/* Radio */}
               <View
                 style={[
                   styles.radioOuter,
-                  isLifetimeSelected && styles.radioOuterSelected,
+                  isAnnualSelected && styles.radioOuterSelected,
                 ]}
               >
-                {isLifetimeSelected && <View style={styles.radioInner} />}
+                {isAnnualSelected && <View style={styles.radioInner} />}
               </View>
 
               {/* Plan info */}
               <View style={styles.planInfo}>
                 <View style={styles.planNameRow}>
-                  <Text style={styles.planName}>Lifetime</Text>
+                  <Text style={styles.planName}>Annual</Text>
                   <View style={styles.bestValueBadge}>
                     <Text style={styles.bestValueText}>BEST VALUE</Text>
                   </View>
                 </View>
                 <Text style={styles.planTagline}>
-                  Best value • Pay once, own forever
+                  Best value • Save 79% vs monthly
                 </Text>
               </View>
 
               {/* Price */}
               <View style={styles.planPriceBlock}>
-                <Text style={styles.planPrice}>{lifetimePrice}</Text>
-                <Text style={styles.planPricePer}>once</Text>
+                <Text style={styles.planPrice}>{annualPrice}</Text>
+                <Text style={styles.planPricePer}>/year</Text>
               </View>
             </TouchableOpacity>
 

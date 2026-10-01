@@ -75,16 +75,26 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       // localStorage may be unavailable in some environments
     }
 
-    // Provide a mock monthly package for web preview
-    const mockPackage: PurchasesPackage = {
-      identifier: "$rc_monthly",
-      product: {
-        title: "Premium",
-        priceString: "$4.99/month",
-        description: "Unlock all premium features",
+    // Provide mock packages for web preview
+    const mockPackages: PurchasesPackage[] = [
+      {
+        identifier: "$rc_monthly",
+        product: {
+          title: "Monthly",
+          priceString: "$1.99",
+          description: "Monthly subscription",
+        },
       },
-    };
-    setPackages([mockPackage]);
+      {
+        identifier: "$rc_annual",
+        product: {
+          title: "Annual",
+          priceString: "$4.99",
+          description: "Annual subscription",
+        },
+      },
+    ];
+    setPackages(mockPackages);
     console.log("[revenuecat] Web preview: showing mock prices");
     setLoading(false);
   }, []);
