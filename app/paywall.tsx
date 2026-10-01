@@ -32,15 +32,6 @@ import { Mascot } from "@/components/Mascot";
 const PRIVACY_POLICY_URL = "https://brightsprout.app/privacy";
 const TERMS_URL = "https://brightsprout.app/terms";
 
-// Free games — always playable without purchase
-const FREE_GAMES_LIST = [
-  "Alphabet Adventure",
-  "Counting Stars",
-  "Shape Sorter",
-  "Paint the House",
-  "Animal Sounds",
-];
-
 // What unlocks with purchase
 const UNLOCK_FEATURES = [
   { emoji: "🎮", text: "14 games total — all games" },
@@ -339,22 +330,6 @@ export default function PaywallScreen() {
 
           {/* ── Content ── */}
           <View style={styles.content}>
-            {/* Free preview card */}
-            <View style={styles.freePreviewCard}>
-              <Text style={styles.freePreviewTitle}>✅ Free Forever</Text>
-              <Text style={styles.freePreviewSubtitle}>
-                5 games — no purchase needed
-              </Text>
-              <View style={styles.freeGamesList}>
-                {FREE_GAMES_LIST.map((name, i) => (
-                  <View key={i} style={styles.freeGameRow}>
-                    <Text style={styles.freeGameBullet}>•</Text>
-                    <Text style={styles.freeGameName}>{name}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-
             {/* Unlock everything section */}
             <Text style={styles.unlockHeadline}>Unlock Everything 🔓</Text>
             <View style={styles.featureList}>
@@ -632,46 +607,6 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 24,
     paddingTop: 24,
-  },
-
-  // Free preview card
-  freePreviewCard: {
-    backgroundColor: KIDS_COLORS.secondaryMuted,
-    borderRadius: 20,
-    padding: 18,
-    marginBottom: 24,
-    borderWidth: 1.5,
-    borderColor: KIDS_COLORS.secondary,
-  },
-  freePreviewTitle: {
-    fontFamily: "Nunito_800ExtraBold",
-    fontSize: 17,
-    color: KIDS_COLORS.text,
-    marginBottom: 2,
-  },
-  freePreviewSubtitle: {
-    fontFamily: "Nunito_400Regular",
-    fontSize: 13,
-    color: KIDS_COLORS.textSecondary,
-    marginBottom: 12,
-  },
-  freeGamesList: {
-    gap: 4,
-  },
-  freeGameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  freeGameBullet: {
-    fontFamily: "Nunito_700Bold",
-    fontSize: 16,
-    color: KIDS_COLORS.secondary,
-  },
-  freeGameName: {
-    fontFamily: "Nunito_600SemiBold",
-    fontSize: 14,
-    color: KIDS_COLORS.text,
   },
 
   // Unlock section
