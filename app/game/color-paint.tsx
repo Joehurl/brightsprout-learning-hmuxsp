@@ -3,6 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,41 +15,29 @@ import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { GameCompleteOverlay } from '@/components/GameCompleteOverlay';
 import { playSound } from '@/utils/sounds';
 
-// All unique first letters — no duplicates
 const PALETTE = [
-  { name: 'Red', hex: '#FF4444' },      // R
-  { name: 'Blue', hex: '#4488FF' },     // B
-  { name: 'Yellow', hex: '#FFD700' },   // Y
-  { name: 'Green', hex: '#44CC44' },    // G
-  { name: 'Orange', hex: '#FF8C00' },   // O
-  { name: 'Purple', hex: '#9944CC' },   // P
-  { name: 'Teal', hex: '#00BCD4' },     // T
-  { name: 'White', hex: '#F5F5F5' },    // W
+  { name: 'Red', hex: '#FF4444' },
+  { name: 'Blue', hex: '#4488FF' },
+  { name: 'Yellow', hex: '#FFD700' },
+  { name: 'Green', hex: '#44CC44' },
+  { name: 'Orange', hex: '#FF8C00' },
+  { name: 'Purple', hex: '#9944CC' },
+  { name: 'Teal', hex: '#00BCD4' },
+  { name: 'White', hex: '#F5F5F5' },
 ];
 
 const COLOR_LETTER: Record<string, string> = {
-  Red: 'R',
-  Blue: 'B',
-  Yellow: 'Y',
-  Green: 'G',
-  Orange: 'O',
-  Purple: 'P',
-  Teal: 'T',
-  White: 'W',
+  Red: 'R', Blue: 'B', Yellow: 'Y', Green: 'G',
+  Orange: 'O', Purple: 'P', Teal: 'T', White: 'W',
 };
 
 const REGIONS = ['sky', 'sun', 'house', 'roof', 'grass'] as const;
 type Region = typeof REGIONS[number];
 
 const DEFAULT_COLORS: Record<Region, string> = {
-  sky: '#E8F4FD',
-  sun: '#FFF9C4',
-  house: '#F5F5F5',
-  roof: '#EEEEEE',
-  grass: '#E8F5E9',
+  sky: '#E8F4FD', sun: '#FFF9C4', house: '#F5F5F5', roof: '#EEEEEE', grass: '#E8F5E9',
 };
 
-// Center points for the letter label in each region (SVG coords, viewBox 300x220)
 const REGION_LABEL_POS: Record<Region, { x: number; y: number }> = {
   sky: { x: 60, y: 70 },
   sun: { x: 240, y: 40 },
@@ -68,16 +57,11 @@ function shuffle<T>(arr: T[]): T[] {
 
 function generateTargetColors(): Record<Region, string> {
   const picked = shuffle(PALETTE.map(p => p.name)).slice(0, 5);
-  return {
-    sky: picked[0],
-    sun: picked[1],
-    house: picked[2],
-    roof: picked[3],
-    grass: picked[4],
-  };
+  return { sky: picked[0], sun: picked[1], house: picked[2], roof: picked[3], grass: picked[4] };
 }
 
 export default function ColorPaintScreen() {
+  const { height: SCREEN_HEIGHT } = useWindowDimensions();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeGame } = useProgress();
@@ -93,6 +77,14 @@ export default function ColorPaintScreen() {
   const [showComplete, setShowComplete] = useState(false);
   const [showRoundComplete, setShowRoundComplete] = useState(false);
   const roundCompleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Responsive sizing
+  const colorCircleSize = Math.min(Math.round(SCREEN_HEIGHT * 0.042), 38);
+  const instructionFontSize = Math.min(Math.round(SCREEN_HEIGHT * 0.018), 14);
+  const headerMarginBottom = Math.round(SCREEN_HEIGHT * 0.01);
+  const instructionMarginBottom = Math.round(SCREEN_HEIGHT * 0.01);
+  const sceneMarginBottom = Math.round(SCREEN_HEIGHT * 0.012);
+  const paletteMarginBottom = Math.round(SCREEN_HEIGHT * 0.01);
 
   const handleSelectColor = (color: { name: string; hex: string }) => {
     console.log('[ColorPaint] Color selected:', color.name, '→ letter:', COLOR_LETTER[color.name]);
@@ -165,7 +157,6 @@ export default function ColorPaintScreen() {
     setSelectedColorName(null);
   };
 
-  // Resolve fill for each region
   const getFill = (region: Region): string => {
     if (errorRegions.has(region)) return '#FF4444';
     if (paintedColors[region]) return paintedColors[region] as string;
@@ -178,11 +169,8 @@ export default function ColorPaintScreen() {
   const roofFill = getFill('roof');
   const grassFill = getFill('grass');
 
-  // Show letter label only if not yet painted
   const showLabel = (region: Region): boolean => paintedColors[region] === null;
-
   const getLabel = (region: Region): string => COLOR_LETTER[targetColors[region]] ?? '?';
-
   const paintedCount = REGIONS.filter(r => paintedColors[r] !== null).length;
 
   const selectedLetter = selectedColorName ? (COLOR_LETTER[selectedColorName] ?? selectedColorName[0]) : null;
@@ -191,8 +179,8 @@ export default function ColorPaintScreen() {
     : 'Pick a color, then tap the section showing its first letter!';
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <View style={styles.header}>
+    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, { marginBottom: headerMarginBottom }]}>
         <AnimatedPressable
           style={styles.backBtn}
           onPress={() => {
@@ -200,7 +188,7 @@ export default function ColorPaintScreen() {
             router.back();
           }}
         >
-          <ChevronLeft size={28} color={KIDS_COLORS.colors} />
+          <ChevronLeft size={26} color={KIDS_COLORS.colors} />
         </AnimatedPressable>
         <Text style={styles.title}>Paint the House 🎨</Text>
         <AnimatedPressable style={styles.clearBtn} onPress={handleClear}>
@@ -211,116 +199,43 @@ export default function ColorPaintScreen() {
         </View>
       </View>
 
-      <Text style={styles.instruction}>{instructionText}</Text>
+      <Text style={[styles.instruction, { fontSize: instructionFontSize, marginBottom: instructionMarginBottom }]}>
+        {instructionText}
+      </Text>
 
       {/* Scene */}
-      <View style={styles.sceneContainer}>
+      <View style={[styles.sceneContainer, { marginBottom: sceneMarginBottom }]}>
         <Svg width="100%" height="100%" viewBox="0 0 300 220">
-          {/* Sky */}
-          <Rect
-            x={0} y={0} width={300} height={140}
-            fill={skyFill}
-            onPress={() => handleRegionPress('sky')}
-          />
-          {/* Sun */}
-          <Circle
-            cx={240} cy={40} r={30}
-            fill={sunFill}
-            stroke="#E0E0E0"
-            strokeWidth={1}
-            onPress={() => handleRegionPress('sun')}
-          />
-          {/* Grass */}
-          <Rect
-            x={0} y={140} width={300} height={80}
-            fill={grassFill}
-            onPress={() => handleRegionPress('grass')}
-          />
-          {/* House body */}
-          <Rect
-            x={80} y={100} width={140} height={80}
-            fill={houseFill}
-            stroke="#CCCCCC"
-            strokeWidth={1}
-            onPress={() => handleRegionPress('house')}
-          />
-          {/* Roof */}
-          <Polygon
-            points="70,100 150,50 230,100"
-            fill={roofFill}
-            stroke="#CCCCCC"
-            strokeWidth={1}
-            onPress={() => handleRegionPress('roof')}
-          />
-          {/* Door */}
+          <Rect x={0} y={0} width={300} height={140} fill={skyFill} onPress={() => handleRegionPress('sky')} />
+          <Circle cx={240} cy={40} r={30} fill={sunFill} stroke="#E0E0E0" strokeWidth={1} onPress={() => handleRegionPress('sun')} />
+          <Rect x={0} y={140} width={300} height={80} fill={grassFill} onPress={() => handleRegionPress('grass')} />
+          <Rect x={80} y={100} width={140} height={80} fill={houseFill} stroke="#CCCCCC" strokeWidth={1} onPress={() => handleRegionPress('house')} />
+          <Polygon points="70,100 150,50 230,100" fill={roofFill} stroke="#CCCCCC" strokeWidth={1} onPress={() => handleRegionPress('roof')} />
           <Rect x={135} y={140} width={30} height={40} fill="#8B6914" rx={4} />
-          {/* Windows */}
           <Rect x={95} y={115} width={30} height={25} fill="#87CEEB" rx={3} />
           <Rect x={175} y={115} width={30} height={25} fill="#87CEEB" rx={3} />
-
-          {/* Target letters */}
           {showLabel('sky') && (
-            <SvgText
-              x={REGION_LABEL_POS.sky.x}
-              y={REGION_LABEL_POS.sky.y}
-              fontSize={28}
-              fontWeight="bold"
-              fill="#333333"
-              textAnchor="middle"
-              alignmentBaseline="middle"
-            >
+            <SvgText x={REGION_LABEL_POS.sky.x} y={REGION_LABEL_POS.sky.y} fontSize={28} fontWeight="bold" fill="#333333" textAnchor="middle" alignmentBaseline="middle">
               {getLabel('sky')}
             </SvgText>
           )}
           {showLabel('sun') && (
-            <SvgText
-              x={REGION_LABEL_POS.sun.x}
-              y={REGION_LABEL_POS.sun.y}
-              fontSize={22}
-              fontWeight="bold"
-              fill="#333333"
-              textAnchor="middle"
-              alignmentBaseline="middle"
-            >
+            <SvgText x={REGION_LABEL_POS.sun.x} y={REGION_LABEL_POS.sun.y} fontSize={22} fontWeight="bold" fill="#333333" textAnchor="middle" alignmentBaseline="middle">
               {getLabel('sun')}
             </SvgText>
           )}
           {showLabel('house') && (
-            <SvgText
-              x={REGION_LABEL_POS.house.x}
-              y={REGION_LABEL_POS.house.y}
-              fontSize={28}
-              fontWeight="bold"
-              fill="#333333"
-              textAnchor="middle"
-              alignmentBaseline="middle"
-            >
+            <SvgText x={REGION_LABEL_POS.house.x} y={REGION_LABEL_POS.house.y} fontSize={28} fontWeight="bold" fill="#333333" textAnchor="middle" alignmentBaseline="middle">
               {getLabel('house')}
             </SvgText>
           )}
           {showLabel('roof') && (
-            <SvgText
-              x={REGION_LABEL_POS.roof.x}
-              y={REGION_LABEL_POS.roof.y}
-              fontSize={22}
-              fontWeight="bold"
-              fill="#333333"
-              textAnchor="middle"
-              alignmentBaseline="middle"
-            >
+            <SvgText x={REGION_LABEL_POS.roof.x} y={REGION_LABEL_POS.roof.y} fontSize={22} fontWeight="bold" fill="#333333" textAnchor="middle" alignmentBaseline="middle">
               {getLabel('roof')}
             </SvgText>
           )}
           {showLabel('grass') && (
-            <SvgText
-              x={REGION_LABEL_POS.grass.x}
-              y={REGION_LABEL_POS.grass.y}
-              fontSize={28}
-              fontWeight="bold"
-              fill="#333333"
-              textAnchor="middle"
-              alignmentBaseline="middle"
-            >
+            <SvgText x={REGION_LABEL_POS.grass.x} y={REGION_LABEL_POS.grass.y} fontSize={28} fontWeight="bold" fill="#333333" textAnchor="middle" alignmentBaseline="middle">
               {getLabel('grass')}
             </SvgText>
           )}
@@ -328,13 +243,13 @@ export default function ColorPaintScreen() {
       </View>
 
       {/* Color palette */}
-      <View style={styles.palette}>
+      <View style={[styles.palette, { marginBottom: paletteMarginBottom }]}>
         {PALETTE.map(color => (
           <AnimatedPressable
             key={color.name}
             style={[
               styles.colorCircle,
-              { backgroundColor: color.hex },
+              { backgroundColor: color.hex, width: colorCircleSize, height: colorCircleSize, borderRadius: colorCircleSize / 2 },
               selectedColor === color.hex && styles.colorCircleSelected,
               color.name === 'White' && styles.colorCircleWhite,
             ]}
@@ -349,7 +264,6 @@ export default function ColorPaintScreen() {
 
       <Text style={styles.progressHint}>{paintedCount}/5 sections painted</Text>
 
-      {/* Round complete overlay */}
       {showRoundComplete && (
         <View style={styles.roundCompleteOverlay}>
           <Text style={styles.roundCompleteEmoji}>🎉</Text>
@@ -373,18 +287,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F4FF',
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 8,
+    gap: 10,
   },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: KIDS_COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -396,30 +309,30 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 22,
+    fontSize: 20,
     color: KIDS_COLORS.text,
     flex: 1,
   },
   scoreBadge: {
     backgroundColor: KIDS_COLORS.colors,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
   scoreText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 14,
+    fontSize: 13,
     color: '#FFFFFF',
   },
   clearBtn: {
     backgroundColor: '#FFE5E5',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   clearBtnText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
+    fontSize: 12,
     color: '#CC3333',
   },
   roundCompleteOverlay: {
@@ -434,35 +347,32 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   roundCompleteEmoji: {
-    fontSize: 72,
-    marginBottom: 12,
+    fontSize: 60,
+    marginBottom: 10,
   },
   roundCompleteTitle: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 36,
+    fontSize: 30,
     color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   roundCompleteSubtitle: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 18,
+    fontSize: 16,
     color: 'rgba(255,255,255,0.85)',
     textAlign: 'center',
   },
   instruction: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 15,
     color: KIDS_COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 8,
   },
   sceneContainer: {
     flex: 1,
     backgroundColor: KIDS_COLORS.surface,
-    borderRadius: 20,
+    borderRadius: 18,
     overflow: 'hidden',
-    marginBottom: 12,
     shadowColor: KIDS_COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
@@ -472,12 +382,8 @@ const styles = StyleSheet.create({
   palette: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
   },
   colorCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
     borderWidth: 2,
     borderColor: 'transparent',
     shadowColor: KIDS_COLORS.shadow,
@@ -497,7 +403,7 @@ const styles = StyleSheet.create({
   },
   colorLetter: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 13,
+    fontSize: 12,
     color: '#FFFFFF',
   },
   colorLetterDark: {
@@ -505,9 +411,9 @@ const styles = StyleSheet.create({
   },
   progressHint: {
     fontFamily: 'Nunito_400Regular',
-    fontSize: 13,
+    fontSize: 12,
     color: KIDS_COLORS.textTertiary,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
 });

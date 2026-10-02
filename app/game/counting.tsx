@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   Animated,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -41,6 +42,7 @@ function getWrongAnswers(correct: number): number[] {
 }
 
 export default function CountingScreen() {
+  const { height: SCREEN_HEIGHT } = useWindowDimensions();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeGame } = useProgress();
@@ -56,6 +58,16 @@ export default function CountingScreen() {
   const round = COUNTING_ROUNDS[roundIndex];
   const wrongAnswers = getWrongAnswers(round.count);
   const choices = shuffle([round.count, ...wrongAnswers]);
+
+  // Responsive sizing
+  const objectSize = Math.min(Math.round(SCREEN_HEIGHT * 0.065), 52);
+  const objectEmojiFontSize = Math.round(objectSize * 0.7);
+  const answerBtnPadV = Math.round(SCREEN_HEIGHT * 0.026);
+  const answerBtnFontSize = Math.min(Math.round(SCREEN_HEIGHT * 0.038), 30);
+  const questionFontSize = Math.min(Math.round(SCREEN_HEIGHT * 0.026), 20);
+  const headerMarginBottom = Math.round(SCREEN_HEIGHT * 0.016);
+  const questionMarginBottom = Math.round(SCREEN_HEIGHT * 0.016);
+  const answersMarginBottom = Math.round(SCREEN_HEIGHT * 0.022);
 
   const handleTapObject = (i: number) => {
     if (tapped.has(i)) return;
@@ -106,8 +118,8 @@ export default function CountingScreen() {
   const objectsArray = Array.from({ length: round.count }, (_, i) => i);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <View style={styles.header}>
+    <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.header, { marginBottom: headerMarginBottom }]}>
         <AnimatedPressable
           style={styles.backBtn}
           onPress={() => {
@@ -115,7 +127,7 @@ export default function CountingScreen() {
             router.back();
           }}
         >
-          <ChevronLeft size={28} color={KIDS_COLORS.numbers} />
+          <ChevronLeft size={26} color={KIDS_COLORS.numbers} />
         </AnimatedPressable>
         <Text style={styles.title}>Counting Stars ⭐</Text>
         <View style={styles.scoreBadge}>
@@ -123,14 +135,19 @@ export default function CountingScreen() {
         </View>
       </View>
 
-      <Text style={styles.question}>How many {round.emoji}s do you see?</Text>
+      <Text style={[styles.question, { fontSize: questionFontSize, marginBottom: questionMarginBottom }]}>
+        How many {round.emoji}s do you see?
+      </Text>
 
       {/* Objects grid */}
       <View style={styles.objectsGrid}>
         {objectsArray.map(i => (
           <AnimatedPressable key={i} onPress={() => handleTapObject(i)}>
-            <Animated.View style={[styles.objectWrapper, { transform: [{ scale: tapAnims[i] }] }]}>
-              <Text style={styles.objectEmoji}>{round.emoji}</Text>
+            <Animated.View style={[
+              styles.objectWrapper,
+              { width: objectSize, height: objectSize, transform: [{ scale: tapAnims[i] }] },
+            ]}>
+              <Text style={[styles.objectEmoji, { fontSize: objectEmojiFontSize }]}>{round.emoji}</Text>
               {tapped.has(i) && (
                 <View style={styles.checkOverlay}>
                   <Text style={styles.checkMark}>✓</Text>
@@ -146,15 +163,19 @@ export default function CountingScreen() {
       )}
 
       {/* Answer buttons */}
-      <View style={styles.answersRow}>
+      <View style={[styles.answersRow, { marginBottom: answersMarginBottom }]}>
         {choices.map((choice, i) => (
           <AnimatedPressable
             key={i}
-            style={[styles.answerBtn, answered && choice === round.count && styles.answerBtnCorrect]}
+            style={[
+              styles.answerBtn,
+              { paddingVertical: answerBtnPadV },
+              answered && choice === round.count && styles.answerBtnCorrect,
+            ]}
             onPress={() => handleAnswer(choice)}
             disabled={answered}
           >
-            <Text style={styles.answerBtnText}>{choice}</Text>
+            <Text style={[styles.answerBtnText, { fontSize: answerBtnFontSize }]}>{choice}</Text>
           </AnimatedPressable>
         ))}
       </View>
@@ -174,18 +195,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: KIDS_COLORS.numbersMuted,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
+    gap: 10,
   },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: KIDS_COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -197,27 +217,25 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 22,
+    fontSize: 20,
     color: KIDS_COLORS.text,
     flex: 1,
   },
   scoreBadge: {
     backgroundColor: KIDS_COLORS.numbers,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
   scoreText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 14,
+    fontSize: 13,
     color: '#FFFFFF',
   },
   question: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 22,
     color: KIDS_COLORS.text,
     textAlign: 'center',
-    marginBottom: 20,
   },
   objectsGrid: {
     flex: 1,
@@ -230,50 +248,44 @@ const styles = StyleSheet.create({
   },
   objectWrapper: {
     position: 'relative',
-    width: 56,
-    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
   },
   objectEmoji: {
-    fontSize: 40,
   },
   checkOverlay: {
     position: 'absolute',
     top: 0,
     right: 0,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: KIDS_COLORS.success,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkMark: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
   countDisplay: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 20,
+    fontSize: 18,
     color: KIDS_COLORS.numbers,
     textAlign: 'center',
-    marginVertical: 12,
+    marginVertical: 8,
   },
   answersRow: {
     flexDirection: 'row',
-    gap: 28,
-    marginBottom: 24,
+    gap: 20,
     paddingHorizontal: 0,
-    paddingBottom: 8,
   },
   answerBtn: {
     flex: 1,
     backgroundColor: KIDS_COLORS.surface,
-    borderRadius: 24,
-    paddingVertical: 28,
-    minHeight: 80,
+    borderRadius: 22,
+    minHeight: 70,
     alignItems: 'center',
     shadowColor: KIDS_COLORS.shadow,
     shadowOffset: { width: 0, height: 3 },
@@ -286,7 +298,6 @@ const styles = StyleSheet.create({
   },
   answerBtnText: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 32,
     color: KIDS_COLORS.text,
   },
 });

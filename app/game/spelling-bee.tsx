@@ -59,9 +59,10 @@ function getLetterChoices(word: string): string[] {
 }
 
 export default function SpellingBeeScreen() {
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const SCREEN_WIDTH = Math.min(width, 600);
   const TILE_SIZE = (SCREEN_WIDTH - 48 - 30) / 6;
+  const hScale = Math.min(height / 852, 1);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeGame } = useProgress();
@@ -191,9 +192,9 @@ export default function SpellingBeeScreen() {
   });
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12, maxWidth: 600, alignSelf: 'center', width: '100%' }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 8, maxWidth: 600, alignSelf: 'center', width: '100%' }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { marginBottom: 8 }]}>
         <AnimatedPressable
           style={styles.backBtn}
           onPress={() => {
@@ -201,14 +202,14 @@ export default function SpellingBeeScreen() {
             router.back();
           }}
         >
-          <ChevronLeft size={28} color={KIDS_COLORS.letters} />
+          <ChevronLeft size={24} color={KIDS_COLORS.letters} />
         </AnimatedPressable>
-        <Text style={styles.title}>Spelling Bee 🐝</Text>
-        <Mascot size={56} animate={false} expression="thinking" />
+        <Text style={[styles.title, { fontSize: Math.round(18 * hScale) }]}>Spelling Bee 🐝</Text>
+        <Mascot size={Math.round(44 * hScale)} animate={false} expression="thinking" />
       </View>
 
       {/* Round indicator */}
-      <View style={styles.roundRow}>
+      <View style={[styles.roundRow, { marginBottom: 12 }]}>
         {[0, 1, 2, 3, 4].map(i => (
           <View
             key={i}
@@ -222,9 +223,9 @@ export default function SpellingBeeScreen() {
       </View>
 
       {/* Word emoji + hint */}
-      <View style={styles.wordDisplay}>
-        <Text style={styles.wordEmoji}>{currentWord.emoji}</Text>
-        <Text style={styles.hintText}>{currentWord.hint}</Text>
+      <View style={[styles.wordDisplay, { marginBottom: 12 }]}>
+        <Text style={[styles.wordEmoji, { fontSize: Math.round(54 * hScale), marginBottom: 4 }]}>{currentWord.emoji}</Text>
+        <Text style={[styles.hintText, { fontSize: Math.round(14 * hScale) }]}>{currentWord.hint}</Text>
       </View>
 
       {/* Typed word display */}
@@ -252,12 +253,12 @@ export default function SpellingBeeScreen() {
       </Animated.View>
 
       {/* Mistakes */}
-      <Text style={styles.mistakesText}>
+      <Text style={[styles.mistakesText, { marginBottom: 10 }]}>
         {mistakes === 0 ? '✨ Perfect so far!' : `❌ ${mistakes} mistake${mistakes > 1 ? 's' : ''}`}
       </Text>
 
       {/* Letter tiles */}
-      <View style={styles.tilesGrid}>
+      <View style={[styles.tilesGrid, { marginBottom: 10 }]}>
         {letterChoices.map((letter, i) => {
           const alreadyUsed = typed.includes(letter) && typed.filter(l => l === letter).length >= currentWord.word.split('').filter(l => l === letter).length;
           return (
@@ -319,9 +320,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: KIDS_COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -341,7 +342,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 10,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   roundDot: {
     width: 12,
@@ -358,30 +359,30 @@ const styles = StyleSheet.create({
   },
   wordDisplay: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 12,
   },
   wordEmoji: {
-    fontSize: 72,
-    marginBottom: 8,
+    fontSize: 54,
+    marginBottom: 4,
   },
   hintText: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 16,
+    fontSize: 14,
     color: KIDS_COLORS.textSecondary,
     textAlign: 'center',
   },
   typedRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 8,
-    marginBottom: 12,
-    paddingVertical: 12,
-    borderRadius: 16,
+    gap: 6,
+    marginBottom: 8,
+    paddingVertical: 8,
+    borderRadius: 14,
   },
   letterSlot: {
-    width: 52,
-    height: 52,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     borderWidth: 2,
     borderColor: KIDS_COLORS.border,
     backgroundColor: KIDS_COLORS.surface,
@@ -402,7 +403,7 @@ const styles = StyleSheet.create({
   },
   letterSlotText: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 24,
+    fontSize: 20,
     color: KIDS_COLORS.textTertiary,
   },
   letterSlotTextFilled: {
@@ -410,17 +411,17 @@ const styles = StyleSheet.create({
   },
   mistakesText: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 14,
+    fontSize: 13,
     color: KIDS_COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   tilesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 5,
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   letterTile: {
     borderRadius: 12,
@@ -441,7 +442,7 @@ const styles = StyleSheet.create({
   },
   letterTileText: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 22,
+    fontSize: 18,
     color: KIDS_COLORS.letters,
   },
   letterTileTextUsed: {
@@ -450,15 +451,15 @@ const styles = StyleSheet.create({
   deleteBtn: {
     alignSelf: 'center',
     backgroundColor: KIDS_COLORS.surface,
-    borderRadius: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
+    borderRadius: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
     borderWidth: 1.5,
     borderColor: KIDS_COLORS.border,
   },
   deleteBtnText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 16,
+    fontSize: 14,
     color: KIDS_COLORS.textSecondary,
   },
 });

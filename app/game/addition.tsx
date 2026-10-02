@@ -3,6 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -41,6 +42,8 @@ function getChoices(correct: number): number[] {
 export default function AdditionScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  const hScale = Math.min(height / 852, 1);
   const { completeGame } = useProgress();
 
   const [qIndex, setQIndex] = useState(0);
@@ -90,8 +93,8 @@ export default function AdditionScreen() {
   const bObjects = Array.from({ length: question.b }, (_, i) => i);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <View style={styles.header}>
+    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, { marginBottom: 10 }]}>
         <AnimatedPressable
           style={styles.backBtn}
           onPress={() => {
@@ -99,9 +102,9 @@ export default function AdditionScreen() {
             router.back();
           }}
         >
-          <ChevronLeft size={28} color={KIDS_COLORS.numbers} />
+          <ChevronLeft size={24} color={KIDS_COLORS.numbers} />
         </AnimatedPressable>
-        <Text style={styles.title}>Adding Up ➕</Text>
+        <Text style={[styles.title, { fontSize: Math.round(18 * hScale) }]}>Adding Up ➕</Text>
         <View style={styles.scoreBadge}>
           <Text style={styles.scoreText}>{score}/{qIndex}</Text>
         </View>
@@ -112,29 +115,29 @@ export default function AdditionScreen() {
         <View style={styles.group}>
           <View style={styles.objectsGrid}>
             {aObjects.map(i => (
-              <Text key={i} style={styles.objectEmoji}>{question.emoji}</Text>
+              <Text key={i} style={[styles.objectEmoji, { fontSize: Math.round(22 * hScale) }]}>{question.emoji}</Text>
             ))}
           </View>
-          <Text style={styles.groupNumber}>{question.a}</Text>
+          <Text style={[styles.groupNumber, { fontSize: Math.round(28 * hScale) }]}>{question.a}</Text>
         </View>
 
-        <Text style={styles.plusSign}>+</Text>
+        <Text style={[styles.plusSign, { fontSize: Math.round(36 * hScale) }]}>+</Text>
 
         {/* Group B */}
         <View style={styles.group}>
           <View style={styles.objectsGrid}>
             {bObjects.map(i => (
-              <Text key={i} style={styles.objectEmoji}>{question.emoji}</Text>
+              <Text key={i} style={[styles.objectEmoji, { fontSize: Math.round(22 * hScale) }]}>{question.emoji}</Text>
             ))}
           </View>
-          <Text style={styles.groupNumber}>{question.b}</Text>
+          <Text style={[styles.groupNumber, { fontSize: Math.round(28 * hScale) }]}>{question.b}</Text>
         </View>
 
-        <Text style={styles.equalsSign}>=</Text>
-        <Text style={styles.questionMark}>?</Text>
+        <Text style={[styles.equalsSign, { fontSize: Math.round(36 * hScale) }]}>=</Text>
+        <Text style={[styles.questionMark, { fontSize: Math.round(48 * hScale) }]}>?</Text>
       </View>
 
-      <View style={styles.answersRow}>
+      <View style={[styles.answersRow, { marginBottom: 10, gap: 16 }]}>
         {choices.map((choice, i) => {
           const isCorrect = choice === correctAnswer;
           const isSelected = selectedChoice === choice;
@@ -149,7 +152,7 @@ export default function AdditionScreen() {
               onPress={() => handleAnswer(choice)}
               disabled={answered}
             >
-              <Text style={[styles.answerText, answered && isSelected && { color: '#FFFFFF' }]}>
+              <Text style={[styles.answerText, { fontSize: Math.round(28 * hScale) }, answered && isSelected && { color: '#FFFFFF' }]}>
                 {choice}
               </Text>
             </AnimatedPressable>
@@ -157,7 +160,7 @@ export default function AdditionScreen() {
         })}
       </View>
 
-      <Text style={styles.progress}>Question {qIndex + 1} of 10</Text>
+      <Text style={[styles.progress, { marginBottom: 12 }]}>Question {qIndex + 1} of 10</Text>
 
       <GameCompleteOverlay
         visible={showComplete}
@@ -183,9 +186,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: KIDS_COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -227,44 +230,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    maxWidth: 80,
+    maxWidth: 70,
     gap: 2,
   },
   objectEmoji: {
-    fontSize: 28,
+    fontSize: 22,
   },
   groupNumber: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 36,
+    fontSize: 28,
     color: KIDS_COLORS.numbers,
   },
   plusSign: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 48,
+    fontSize: 36,
     color: KIDS_COLORS.primary,
   },
   equalsSign: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 48,
+    fontSize: 36,
     color: KIDS_COLORS.text,
   },
   questionMark: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 64,
+    fontSize: 48,
     color: KIDS_COLORS.numbers,
   },
   answersRow: {
     flexDirection: 'row',
-    gap: 28,
-    marginBottom: 16,
+    gap: 16,
+    marginBottom: 10,
     paddingHorizontal: 0,
-    paddingBottom: 8,
+    paddingBottom: 4,
   },
   answerBtn: {
     flex: 1,
-    borderRadius: 24,
-    paddingVertical: 28,
-    minHeight: 80,
+    borderRadius: 20,
+    paddingVertical: 20,
+    minHeight: 64,
     alignItems: 'center',
     shadowColor: KIDS_COLORS.shadow,
     shadowOffset: { width: 0, height: 3 },
@@ -274,14 +277,14 @@ const styles = StyleSheet.create({
   },
   answerText: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 36,
+    fontSize: 28,
     color: KIDS_COLORS.text,
   },
   progress: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 16,
+    fontSize: 14,
     color: KIDS_COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 12,
   },
 });

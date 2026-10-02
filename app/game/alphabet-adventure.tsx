@@ -53,27 +53,22 @@ const LETTER_COLORS = [
   KIDS_COLORS.colors, KIDS_COLORS.animals, KIDS_COLORS.music,
 ];
 
-// ABC song melody: frequencies (Hz) per letter A-Z
-// Standard ABC song in C major
 const ABC_MELODY_FREQS = [
-  261, 261, 392, 392, 440, 440, 392, // A B C D E F G (G is half note)
-  349, 349, 330, 330, 294, 294, 261, // H I J K L M N (N is half note)
-  392, 392, 349, 349, 330, 330, 294, // O P Q R S T U (U is half note)
-  261, 392, 349, 330, 294, 261,       // V W X Y Z (end)
+  261, 261, 392, 392, 440, 440, 392,
+  349, 349, 330, 330, 294, 294, 261,
+  392, 392, 349, 349, 330, 330, 294,
+  261, 392, 349, 330, 294, 261,
 ];
 
-// Duration in ms per note (quarter=400ms, half=800ms)
 const ABC_MELODY_DURATIONS = [
-  400, 400, 400, 400, 400, 400, 800, // A-G
-  400, 400, 400, 400, 400, 400, 800, // H-N
-  400, 400, 400, 400, 400, 400, 800, // O-U
-  400, 400, 400, 400, 400, 800,       // V-Z
+  400, 400, 400, 400, 400, 400, 800,
+  400, 400, 400, 400, 400, 400, 800,
+  400, 400, 400, 400, 400, 400, 800,
+  400, 400, 400, 400, 400, 800,
 ];
-
-
 
 export default function AlphabetAdventureScreen() {
-  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeGame } = useProgress();
@@ -90,6 +85,20 @@ export default function AlphabetAdventureScreen() {
 
   const currentLetter = LETTER_DATA[currentIndex];
   const letterColor = LETTER_COLORS[currentIndex % LETTER_COLORS.length];
+
+  // Responsive sizing
+  const circleSize = Math.min(Math.round(SCREEN_HEIGHT * 0.16), 130);
+  const letterFontSize = Math.round(circleSize * 0.6);
+  const wordFontSize = Math.min(Math.round(SCREEN_HEIGHT * 0.028), 22);
+  const titleFontSize = Math.min(Math.round(SCREEN_WIDTH * 0.055), 20);
+  const navBtnPadH = Math.round(SCREEN_WIDTH * 0.045);
+  const navBtnPadV = Math.round(SCREEN_HEIGHT * 0.012);
+  const playBtnPadV = Math.round(SCREEN_HEIGHT * 0.018);
+  const playBtnFontSize = Math.min(Math.round(SCREEN_HEIGHT * 0.022), 18);
+  const dotSize = Math.round(SCREEN_WIDTH * 0.082);
+  const dotFontSize = Math.round(dotSize * 0.38);
+  const headerMarginBottom = Math.round(SCREEN_HEIGHT * 0.018);
+  const circleWrapperMarginBottom = Math.round(SCREEN_HEIGHT * 0.018);
 
   const animateLetter = useCallback(() => {
     bounceAnim.setValue(0.5);
@@ -167,7 +176,6 @@ export default function AlphabetAdventureScreen() {
     }
     setIsPlaying(true);
 
-    // Build cumulative start times for each letter (in ms from now)
     const startTimes: number[] = [];
     let acc = 0;
     for (let i = 0; i < 26; i++) {
@@ -177,7 +185,6 @@ export default function AlphabetAdventureScreen() {
     const totalDuration = acc;
 
     if (Platform.OS === 'web') {
-      // Use Web Audio API — schedule all notes
       const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
       if (AudioContextClass) {
         try {
@@ -186,7 +193,6 @@ export default function AlphabetAdventureScreen() {
 
           console.log('[AlphabetAdventure] Playing ABC melody via Web Audio API (rAF sync)');
 
-          // Schedule all 26 notes
           ABC_MELODY_FREQS.forEach((freq, i) => {
             const noteStart = startAudioTime + startTimes[i] / 1000;
             const dur = (ABC_MELODY_DURATIONS[i] ?? 400) / 1000;
@@ -202,12 +208,10 @@ export default function AlphabetAdventureScreen() {
             osc.stop(noteStart + dur);
           });
 
-          // Use rAF loop to sync visuals to audio clock
           let lastLetterIdx = -1;
           const rafRef = { id: 0 };
           const tick = () => {
-            const elapsed = (ctx.currentTime - startAudioTime) * 1000; // ms
-            // Find which letter should be active
+            const elapsed = (ctx.currentTime - startAudioTime) * 1000;
             let activeIdx = 25;
             for (let i = 0; i < 26; i++) {
               if (elapsed < startTimes[i] + (ABC_MELODY_DURATIONS[i] ?? 400)) {
@@ -228,24 +232,20 @@ export default function AlphabetAdventureScreen() {
             }
           };
           rafRef.id = requestAnimationFrame(tick);
-          // Store cancel function
           const cancelId = setTimeout(() => {
             cancelAnimationFrame(rafRef.id);
             setIsPlaying(false);
           }, totalDuration + 500);
           timeoutIdsRef.current.push(cancelId);
-          // Store rafRef for cleanup
           (timeoutIdsRef as any).rafRef = rafRef;
         } catch (e) {
           console.log('[AlphabetAdventure] Web Audio error:', e);
-          // Fall through to setTimeout approach
           scheduleWithTimeouts(startTimes, totalDuration);
         }
       } else {
         scheduleWithTimeouts(startTimes, totalDuration);
       }
     } else {
-      // Native: use setTimeout (no audio, just visual)
       console.log('[AlphabetAdventure] Native: visual letter sync (no audio)');
       scheduleWithTimeouts(startTimes, totalDuration);
     }
@@ -286,9 +286,9 @@ export default function AlphabetAdventureScreen() {
 
   return (
     <LinearGradient colors={['#FF6B6B', '#FF8E53']} style={styles.container}>
-      <View style={[styles.inner, { paddingTop: insets.top + 12 }]}>
+      <View style={[styles.inner, { paddingTop: insets.top + 8 }]}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { marginBottom: headerMarginBottom }]}>
           <AnimatedPressable
             style={styles.backBtn}
             onPress={() => {
@@ -296,17 +296,22 @@ export default function AlphabetAdventureScreen() {
               router.back();
             }}
           >
-            <ChevronLeft size={28} color="#FFFFFF" />
+            <ChevronLeft size={24} color="#FFFFFF" />
           </AnimatedPressable>
-          <Text style={styles.title}>Alphabet Adventure 🎵</Text>
-          <Mascot size={60} animate={false} expression="happy" />
+          <Text style={[styles.title, { fontSize: titleFontSize }]}>Alphabet Adventure 🎵</Text>
+          <Mascot size={44} animate={false} expression="happy" />
         </View>
 
         {/* Letter Display */}
         <View style={styles.letterDisplay}>
-          <View style={styles.letterCircleWrapper}>
-            <Animated.View style={[styles.letterCircle, { transform: [{ scale: bounceAnim }] }]}>
-              <Text style={[styles.letterText, { color: letterColor }]}>{currentLetter.letter}</Text>
+          <View style={[styles.letterCircleWrapper, { marginBottom: circleWrapperMarginBottom }]}>
+            <Animated.View style={[
+              styles.letterCircle,
+              { width: circleSize, height: circleSize, borderRadius: circleSize / 2, transform: [{ scale: bounceAnim }] },
+            ]}>
+              <Text style={[styles.letterText, { color: letterColor, fontSize: letterFontSize, lineHeight: letterFontSize * 1.15 }]}>
+                {currentLetter.letter}
+              </Text>
             </Animated.View>
             {isPlaying && (
               <Animated.Text style={[styles.musicNote, { transform: [{ scale: noteScale }] }]}>
@@ -314,7 +319,7 @@ export default function AlphabetAdventureScreen() {
               </Animated.Text>
             )}
           </View>
-          <Text style={styles.wordText}>
+          <Text style={[styles.wordText, { fontSize: wordFontSize }]}>
             {currentLetter.letter} is for {currentLetter.word} {currentLetter.emoji}
           </Text>
           {isPlaying && (
@@ -327,7 +332,7 @@ export default function AlphabetAdventureScreen() {
         {/* Navigation */}
         <View style={styles.navRow}>
           <AnimatedPressable
-            style={[styles.navBtn, currentIndex === 0 && styles.navBtnDisabled]}
+            style={[styles.navBtn, { paddingHorizontal: navBtnPadH, paddingVertical: navBtnPadV }, currentIndex === 0 && styles.navBtnDisabled]}
             onPress={handlePrev}
             disabled={currentIndex === 0}
           >
@@ -335,7 +340,7 @@ export default function AlphabetAdventureScreen() {
           </AnimatedPressable>
           <Text style={styles.letterCounter}>{currentIndex + 1} / 26</Text>
           <AnimatedPressable
-            style={[styles.navBtn, currentIndex === 25 && styles.navBtnDisabled]}
+            style={[styles.navBtn, { paddingHorizontal: navBtnPadH, paddingVertical: navBtnPadV }, currentIndex === 25 && styles.navBtnDisabled]}
             onPress={handleNext}
             disabled={currentIndex === 25}
           >
@@ -348,8 +353,8 @@ export default function AlphabetAdventureScreen() {
           ref={scrollRef}
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.dotsScroll}
-          contentContainerStyle={styles.dotsContent}
+          style={[styles.dotsScroll, { maxHeight: dotSize + 8 }]}
+          contentContainerStyle={[styles.dotsContent, { gap: 5 }]}
         >
           {LETTER_DATA.map((item, i) => {
             const isVisited = visited.has(i);
@@ -359,6 +364,7 @@ export default function AlphabetAdventureScreen() {
                 key={i}
                 style={[
                   styles.dot,
+                  { width: dotSize, height: dotSize, borderRadius: dotSize / 2 },
                   isVisited && styles.dotVisited,
                   isCurrent && styles.dotCurrent,
                 ]}
@@ -367,7 +373,7 @@ export default function AlphabetAdventureScreen() {
                   goToLetter(i);
                 }}
               >
-                <Text style={[styles.dotText, (isVisited || isCurrent) && styles.dotTextActive]}>
+                <Text style={[styles.dotText, { fontSize: dotFontSize }, (isVisited || isCurrent) && styles.dotTextActive]}>
                   {item.letter}
                 </Text>
               </AnimatedPressable>
@@ -376,8 +382,11 @@ export default function AlphabetAdventureScreen() {
         </ScrollView>
 
         {/* Play button */}
-        <AnimatedPressable style={[styles.playBtn, isPlaying && styles.playBtnActive]} onPress={handlePlaySong}>
-          <Text style={[styles.playBtnText, isPlaying && styles.playBtnTextActive]}>
+        <AnimatedPressable
+          style={[styles.playBtn, { paddingVertical: playBtnPadV }, isPlaying && styles.playBtnActive]}
+          onPress={handlePlaySong}
+        >
+          <Text style={[styles.playBtnText, { fontSize: playBtnFontSize }, isPlaying && styles.playBtnTextActive]}>
             {songButtonLabel}
           </Text>
         </AnimatedPressable>
@@ -405,20 +414,18 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 24,
+    gap: 10,
   },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 24,
     color: '#FFFFFF',
     flex: 1,
   },
@@ -431,83 +438,69 @@ const styles = StyleSheet.create({
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
   },
   letterCircle: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: 'rgba(0,0,0,0.3)',
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 1,
-    shadowRadius: 16,
+    shadowRadius: 12,
     elevation: 8,
   },
   letterText: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 96,
-    lineHeight: 110,
   },
   musicNote: {
     position: 'absolute',
-    top: -10,
-    right: -10,
-    fontSize: 32,
+    top: -8,
+    right: -8,
+    fontSize: 26,
     color: '#FFFFFF',
   },
   wordText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 26,
     color: '#FFFFFF',
     textAlign: 'center',
   },
   playingHint: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 16,
+    fontSize: 14,
     color: 'rgba(255,255,255,0.85)',
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: 6,
   },
   navRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   navBtn: {
     backgroundColor: 'rgba(255,255,255,0.25)',
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    borderRadius: 14,
   },
   navBtnDisabled: {
     opacity: 0.3,
   },
   navBtnText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 16,
+    fontSize: 15,
     color: '#FFFFFF',
   },
   letterCounter: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 18,
+    fontSize: 16,
     color: '#FFFFFF',
   },
   dotsScroll: {
-    maxHeight: 52,
-    marginBottom: 16,
+    marginBottom: 10,
   },
   dotsContent: {
-    gap: 6,
     paddingHorizontal: 4,
   },
   dot: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -521,7 +514,6 @@ const styles = StyleSheet.create({
   },
   dotText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 14,
     color: 'rgba(255,255,255,0.8)',
   },
   dotTextActive: {
@@ -529,10 +521,9 @@ const styles = StyleSheet.create({
   },
   playBtn: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    paddingVertical: 18,
+    borderRadius: 22,
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
     shadowColor: 'rgba(0,0,0,0.2)',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
@@ -544,7 +535,6 @@ const styles = StyleSheet.create({
   },
   playBtnText: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 20,
     color: '#FF6B6B',
   },
   playBtnTextActive: {

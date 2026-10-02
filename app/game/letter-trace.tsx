@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -31,10 +31,14 @@ function pointsToPath(points: Point[]): string {
 }
 
 export default function LetterTraceScreen() {
-  const { width } = useWindowDimensions();
-  const CANVAS_SIZE = Math.min(width - 48, 320);
-  const router = useRouter();
+  const { width, height: SCREEN_HEIGHT } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+
+  // Canvas size: leave room for header (~60pt), instruction (~30pt), buttons (~70pt), safe area, margins
+  const usableHeight = SCREEN_HEIGHT - insets.top - 60 - 30 - 70 - 40;
+  const CANVAS_SIZE = Math.min(width - 48, usableHeight, 300);
+
+  const router = useRouter();
   const { completeGame } = useProgress();
 
   const [letterIndex, setLetterIndex] = useState(0);
@@ -106,10 +110,20 @@ export default function LetterTraceScreen() {
 
   const allPaths = currentPath.length > 0 ? [...paths, currentPath] : paths;
 
+  // Responsive font sizes
+  const titleFontSize = Math.min(Math.round(SCREEN_HEIGHT * 0.026), 20);
+  const instructionFontSize = Math.min(Math.round(SCREEN_HEIGHT * 0.02), 16);
+  const btnFontSize = Math.min(Math.round(SCREEN_HEIGHT * 0.02), 16);
+  const btnPadV = Math.round(SCREEN_HEIGHT * 0.016);
+  const headerMarginBottom = Math.round(SCREEN_HEIGHT * 0.014);
+  const instructionMarginBottom = Math.round(SCREEN_HEIGHT * 0.012);
+  const btnRowMarginTop = Math.round(SCREEN_HEIGHT * 0.018);
+  const btnRowMarginBottom = Math.round(SCREEN_HEIGHT * 0.022);
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { marginBottom: headerMarginBottom }]}>
         <AnimatedPressable
           style={styles.backBtn}
           onPress={() => {
@@ -117,27 +131,26 @@ export default function LetterTraceScreen() {
             router.back();
           }}
         >
-          <ChevronLeft size={28} color={KIDS_COLORS.letters} />
+          <ChevronLeft size={26} color={KIDS_COLORS.letters} />
         </AnimatedPressable>
-        <Text style={styles.title}>Letter Tracing ✏️</Text>
+        <Text style={[styles.title, { fontSize: titleFontSize }]}>Letter Tracing ✏️</Text>
         <View style={styles.progressBadge}>
           <Text style={styles.progressText}>{Math.min(tracedCount, 5)}/5</Text>
         </View>
       </View>
 
-      <Text style={styles.instruction}>Trace the letter with your finger!</Text>
+      <Text style={[styles.instruction, { fontSize: instructionFontSize, marginBottom: instructionMarginBottom }]}>
+        Trace the letter with your finger!
+      </Text>
 
       {/* Canvas */}
       <View style={styles.canvasContainer}>
-        {/* Large letter label above canvas for visibility */}
-        <Text style={styles.letterHint}>{currentLetter}</Text>
         <View
           ref={canvasRef}
           style={[styles.canvas, { width: CANVAS_SIZE, height: CANVAS_SIZE }]}
           {...panResponder.panHandlers}
         >
           <Svg width={CANVAS_SIZE} height={CANVAS_SIZE} style={StyleSheet.absoluteFill}>
-            {/* Guide letter — filled with low opacity for clear visibility */}
             <SvgText
               x={CANVAS_SIZE / 2}
               y={CANVAS_SIZE * 0.78}
@@ -151,7 +164,6 @@ export default function LetterTraceScreen() {
               {currentLetter}
             </SvgText>
 
-            {/* Drawn paths */}
             {allPaths.map((pts, i) => {
               const d = pointsToPath(pts);
               if (!d) return null;
@@ -172,12 +184,12 @@ export default function LetterTraceScreen() {
       </View>
 
       {/* Buttons */}
-      <View style={styles.btnRow}>
-        <AnimatedPressable style={styles.clearBtn} onPress={handleClear}>
-          <Text style={styles.clearBtnText}>Clear ✕</Text>
+      <View style={[styles.btnRow, { marginTop: btnRowMarginTop, marginBottom: btnRowMarginBottom }]}>
+        <AnimatedPressable style={[styles.clearBtn, { paddingVertical: btnPadV }]} onPress={handleClear}>
+          <Text style={[styles.clearBtnText, { fontSize: btnFontSize }]}>Clear ✕</Text>
         </AnimatedPressable>
-        <AnimatedPressable style={styles.nextBtn} onPress={handleNextLetter}>
-          <Text style={styles.nextBtnText}>
+        <AnimatedPressable style={[styles.nextBtn, { paddingVertical: btnPadV }]} onPress={handleNextLetter}>
+          <Text style={[styles.nextBtnText, { fontSize: btnFontSize }]}>
             {tracedCount >= 4 ? 'Finish! 🎉' : 'Next Letter →'}
           </Text>
         </AnimatedPressable>
@@ -198,18 +210,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: KIDS_COLORS.lettersMuted,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
+    gap: 10,
   },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: KIDS_COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -221,45 +232,33 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 24,
     color: KIDS_COLORS.text,
     flex: 1,
   },
   progressBadge: {
     backgroundColor: KIDS_COLORS.letters,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
   progressText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 16,
+    fontSize: 14,
     color: '#FFFFFF',
   },
   instruction: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 18,
     color: KIDS_COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 8,
   },
   canvasContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  letterHint: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 72,
-    color: KIDS_COLORS.letters,
-    opacity: 0.25,
-    position: 'absolute',
-    top: -20,
-    zIndex: 0,
-  },
   canvas: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    borderRadius: 22,
     shadowColor: KIDS_COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
@@ -269,34 +268,28 @@ const styles = StyleSheet.create({
   },
   btnRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
-    marginTop: 20,
+    gap: 10,
   },
   clearBtn: {
     flex: 1,
     backgroundColor: KIDS_COLORS.surface,
-    borderRadius: 20,
-    paddingVertical: 16,
+    borderRadius: 18,
     alignItems: 'center',
     borderWidth: 2,
     borderColor: KIDS_COLORS.letters,
   },
   clearBtnText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 18,
     color: KIDS_COLORS.letters,
   },
   nextBtn: {
     flex: 2,
     backgroundColor: KIDS_COLORS.letters,
-    borderRadius: 20,
-    paddingVertical: 16,
+    borderRadius: 18,
     alignItems: 'center',
   },
   nextBtnText: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 18,
     color: '#FFFFFF',
   },
 });

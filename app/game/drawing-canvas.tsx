@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -64,7 +64,6 @@ export default function DrawingCanvasScreen() {
   const activeStrokeRef = useRef(selectedBrush.size);
   const isEraserRef = useRef(isEraser);
 
-  // Keep refs in sync with state
   activeColorRef.current = isEraser ? '#FFFFFF' : selectedColor;
   activeStrokeRef.current = isEraser ? selectedBrush.size * 3 : selectedBrush.size;
   isEraserRef.current = isEraser;
@@ -96,11 +95,7 @@ export default function DrawingCanvasScreen() {
           if (cp) {
             setPaths(prev => [
               ...prev,
-              {
-                d: cp,
-                color: getActiveColor(),
-                strokeWidth: getActiveStrokeWidth(),
-              },
+              { d: cp, color: getActiveColor(), strokeWidth: getActiveStrokeWidth() },
             ]);
           }
           return '';
@@ -166,12 +161,16 @@ export default function DrawingCanvasScreen() {
     setNewBadges([]);
   };
 
-  const HEADER_HEIGHT = insets.top + 60;
-  const TOOLBAR_HEIGHT = 140;
-  const CANVAS_HEIGHT = SCREEN_HEIGHT - HEADER_HEIGHT - TOOLBAR_HEIGHT - 20;
+  // Responsive: toolbar is fixed height, canvas fills remaining space
+  const toolbarHeight = Math.round(SCREEN_HEIGHT * 0.155);
+  const headerHeight = insets.top + 52;
+  const CANVAS_HEIGHT = SCREEN_HEIGHT - headerHeight - toolbarHeight - 16;
+
+  // Color dot size scales with screen
+  const colorDotSize = Math.min(Math.round(SCREEN_WIDTH / 10), 34);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
       {/* Header */}
       <View style={styles.header}>
         <AnimatedPressable
@@ -181,10 +180,10 @@ export default function DrawingCanvasScreen() {
             router.back();
           }}
         >
-          <ChevronLeft size={28} color={KIDS_COLORS.colors} />
+          <ChevronLeft size={26} color={KIDS_COLORS.colors} />
         </AnimatedPressable>
         <Text style={styles.title}>Drawing Canvas 🎨</Text>
-        <Mascot size={48} animate={false} expression="excited" />
+        <Mascot size={40} animate={false} expression="excited" />
       </View>
 
       {/* Canvas */}
@@ -231,7 +230,7 @@ export default function DrawingCanvasScreen() {
       </View>
 
       {/* Toolbar */}
-      <View style={styles.toolbar}>
+      <View style={[styles.toolbar, { height: toolbarHeight }]}>
         {/* Color palette */}
         <View style={styles.paletteRow}>
           {PALETTE_COLORS.map(item => (
@@ -239,7 +238,7 @@ export default function DrawingCanvasScreen() {
               key={item.id}
               style={[
                 styles.colorDot,
-                { backgroundColor: item.color },
+                { backgroundColor: item.color, width: colorDotSize, height: colorDotSize, borderRadius: colorDotSize / 2 },
                 !isEraser && selectedColor === item.color && styles.colorDotSelected,
               ]}
               onPress={() => handleColorPress(item.color)}
@@ -255,7 +254,10 @@ export default function DrawingCanvasScreen() {
               style={[styles.brushBtn, selectedBrush.id === brush.id && !isEraser && styles.brushBtnSelected]}
               onPress={() => handleBrushPress(brush)}
             >
-              <View style={[styles.brushDot, { width: brush.size, height: brush.size, borderRadius: brush.size / 2, backgroundColor: isEraser ? KIDS_COLORS.textTertiary : selectedColor }]} />
+              <View style={[
+                styles.brushDot,
+                { width: brush.size, height: brush.size, borderRadius: brush.size / 2, backgroundColor: isEraser ? KIDS_COLORS.textTertiary : selectedColor },
+              ]} />
               <Text style={styles.brushLabel}>{brush.label}</Text>
             </AnimatedPressable>
           ))}
@@ -266,15 +268,15 @@ export default function DrawingCanvasScreen() {
             style={[styles.toolBtn, isEraser && styles.toolBtnActive]}
             onPress={handleEraserPress}
           >
-            <Eraser size={20} color={isEraser ? '#FFFFFF' : KIDS_COLORS.textSecondary} />
+            <Eraser size={18} color={isEraser ? '#FFFFFF' : KIDS_COLORS.textSecondary} />
           </AnimatedPressable>
 
           <AnimatedPressable style={styles.toolBtn} onPress={handleClear}>
-            <Trash2 size={20} color={KIDS_COLORS.danger} />
+            <Trash2 size={18} color={KIDS_COLORS.danger} />
           </AnimatedPressable>
 
           <AnimatedPressable style={[styles.toolBtn, styles.saveBtn]} onPress={handleSave}>
-            <Star size={20} color="#FFFFFF" />
+            <Star size={18} color="#FFFFFF" />
           </AnimatedPressable>
         </View>
       </View>
@@ -311,14 +313,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 8,
-    paddingHorizontal: 16,
+    gap: 10,
+    marginBottom: 6,
+    paddingHorizontal: 14,
   },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: KIDS_COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -330,21 +332,21 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 22,
+    fontSize: 20,
     color: KIDS_COLORS.text,
     flex: 1,
   },
   canvas: {
-    marginHorizontal: 12,
+    marginHorizontal: 10,
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 18,
     overflow: 'hidden',
     shadowColor: KIDS_COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 12,
     elevation: 4,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   canvasPlaceholder: {
     flex: 1,
@@ -353,32 +355,30 @@ const styles = StyleSheet.create({
   },
   canvasPlaceholderText: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 18,
+    fontSize: 16,
     color: KIDS_COLORS.textTertiary,
   },
   toolbar: {
     backgroundColor: KIDS_COLORS.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 6,
     shadowColor: KIDS_COLORS.shadow,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 1,
     shadowRadius: 8,
     elevation: 8,
-    gap: 10,
+    gap: 8,
+    justifyContent: 'center',
   },
   paletteRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
   },
   colorDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
     borderWidth: 2,
     borderColor: 'transparent',
   },
@@ -389,14 +389,14 @@ const styles = StyleSheet.create({
   toolRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   brushBtn: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     backgroundColor: KIDS_COLORS.background,
     gap: 2,
   },
@@ -410,16 +410,16 @@ const styles = StyleSheet.create({
   },
   brushLabel: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
+    fontSize: 10,
     color: KIDS_COLORS.textSecondary,
   },
   toolSeparator: {
     flex: 1,
   },
   toolBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     backgroundColor: KIDS_COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',

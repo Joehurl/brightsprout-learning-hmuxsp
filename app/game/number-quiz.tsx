@@ -3,6 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -47,6 +48,8 @@ function getChoices(correct: number): number[] {
 export default function NumberQuizScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  const hScale = Math.min(height / 852, 1);
   const { completeGame } = useProgress();
 
   const [qIndex, setQIndex] = useState(0);
@@ -94,8 +97,8 @@ export default function NumberQuizScreen() {
   const objectsArray = Array.from({ length: question.number }, (_, i) => i);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <View style={styles.header}>
+    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, { marginBottom: 10 }]}>
         <AnimatedPressable
           style={styles.backBtn}
           onPress={() => {
@@ -103,17 +106,17 @@ export default function NumberQuizScreen() {
             router.back();
           }}
         >
-          <ChevronLeft size={28} color={KIDS_COLORS.numbers} />
+          <ChevronLeft size={24} color={KIDS_COLORS.numbers} />
         </AnimatedPressable>
-        <Text style={styles.title}>Number Quiz 🔢</Text>
+        <Text style={[styles.title, { fontSize: Math.round(18 * hScale) }]}>Number Quiz 🔢</Text>
         <View style={styles.scoreBadge}>
           <Text style={styles.scoreText}>{score}/{qIndex}</Text>
         </View>
       </View>
 
-      <View style={styles.questionArea}>
-        <Text style={styles.bigNumber}>{question.number}</Text>
-        <Text style={styles.instruction}>Pick the card with {question.number} objects!</Text>
+      <View style={[styles.questionArea, { marginBottom: 8 }]}>
+        <Text style={[styles.bigNumber, { fontSize: Math.round(72 * hScale), lineHeight: Math.round(84 * hScale) }]}>{question.number}</Text>
+        <Text style={[styles.instruction, { fontSize: Math.round(16 * hScale) }]}>Pick the card with {question.number} objects!</Text>
       </View>
 
       <View style={styles.choicesRow}>
@@ -135,10 +138,10 @@ export default function NumberQuizScreen() {
             >
               <View style={styles.choiceObjects}>
                 {choiceObjects.map(j => (
-                  <Text key={j} style={styles.choiceEmoji}>{question.emoji}</Text>
+                  <Text key={j} style={[styles.choiceEmoji, { fontSize: Math.round(22 * hScale) }]}>{question.emoji}</Text>
                 ))}
               </View>
-              <Text style={[styles.choiceNumber, answered && isSelected && { color: '#FFFFFF' }]}>
+              <Text style={[styles.choiceNumber, { fontSize: Math.round(26 * hScale) }, answered && isSelected && { color: '#FFFFFF' }]}>
                 {choice}
               </Text>
             </AnimatedPressable>
@@ -146,7 +149,7 @@ export default function NumberQuizScreen() {
         })}
       </View>
 
-      <Text style={styles.progress}>Question {qIndex + 1} of 10</Text>
+      <Text style={[styles.progress, { marginBottom: 12 }]}>Question {qIndex + 1} of 10</Text>
 
       <GameCompleteOverlay
         visible={showComplete}
@@ -172,9 +175,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: KIDS_COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -203,31 +206,31 @@ const styles = StyleSheet.create({
   },
   questionArea: {
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   bigNumber: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 96,
+    fontSize: 72,
     color: KIDS_COLORS.numbers,
-    lineHeight: 110,
+    lineHeight: 84,
   },
   instruction: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 20,
+    fontSize: 16,
     color: KIDS_COLORS.text,
     textAlign: 'center',
   },
   choicesRow: {
     flexDirection: 'column',
-    gap: 20,
+    gap: 10,
     flex: 1,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   choiceCard: {
     flex: 1,
-    minHeight: 100,
-    borderRadius: 20,
-    padding: 20,
+    minHeight: 70,
+    borderRadius: 16,
+    padding: 12,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: KIDS_COLORS.shadow,
@@ -246,18 +249,18 @@ const styles = StyleSheet.create({
     alignContent: 'center',
   },
   choiceEmoji: {
-    fontSize: 28,
+    fontSize: 22,
   },
   choiceNumber: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 32,
+    fontSize: 26,
     color: KIDS_COLORS.text,
   },
   progress: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 16,
+    fontSize: 14,
     color: KIDS_COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 12,
   },
 });

@@ -184,9 +184,11 @@ function MemoryCard({ card, isFlipped, isMatched, onPress, flipAnim, cardSize }:
 }
 
 export default function MemoryMatchScreen() {
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const SCREEN_WIDTH = Math.min(width, 600);
   const CARD_SIZE = (SCREEN_WIDTH - 48 - CARD_MARGIN * (COLS - 1)) / COLS;
+  // Scale font/icon sizes relative to screen height (baseline 852pt)
+  const hScale = Math.min(height / 852, 1);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeGame } = useProgress();
@@ -286,8 +288,8 @@ export default function MemoryMatchScreen() {
   const starsLabel = earnedStars === 3 ? '⭐⭐⭐ Amazing!' : earnedStars === 2 ? '⭐⭐ Great job!' : '⭐ You did it!';
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12, maxWidth: 600, alignSelf: 'center', width: '100%' }]}>
-      <View style={styles.header}>
+    <View style={[styles.container, { paddingTop: insets.top + 8, maxWidth: 600, alignSelf: 'center', width: '100%' }]}>
+      <View style={[styles.header, { marginBottom: 8 }]}>
         <AnimatedPressable
           style={styles.backBtn}
           onPress={() => {
@@ -295,18 +297,18 @@ export default function MemoryMatchScreen() {
             router.back();
           }}
         >
-          <ChevronLeft size={28} color={KIDS_COLORS.shapes} />
+          <ChevronLeft size={24} color={KIDS_COLORS.shapes} />
         </AnimatedPressable>
-        <Text style={styles.title}>Shape Memory 🔷</Text>
-        <Mascot size={56} animate={false} expression="thinking" />
+        <Text style={[styles.title, { fontSize: Math.round(18 * hScale) }]}>Shape Memory 🔷</Text>
+        <Mascot size={Math.round(44 * hScale)} animate={false} expression="thinking" />
       </View>
 
-      <View style={styles.statsRow}>
+      <View style={[styles.statsRow, { marginBottom: 10 }]}>
         <View style={styles.statBadge}>
-          <Text style={styles.statBadgeText}>🎯 Moves: {moves}</Text>
+          <Text style={[styles.statBadgeText, { fontSize: Math.round(13 * hScale) }]}>🎯 Moves: {moves}</Text>
         </View>
         <View style={styles.statBadge}>
-          <Text style={styles.statBadgeText}>✅ {matchedPairs.size}/{SHAPE_PAIRS.length} pairs</Text>
+          <Text style={[styles.statBadgeText, { fontSize: Math.round(13 * hScale) }]}>✅ {matchedPairs.size}/{SHAPE_PAIRS.length} pairs</Text>
         </View>
       </View>
 
@@ -357,13 +359,13 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 12,
+    gap: 10,
+    marginBottom: 8,
   },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: KIDS_COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -382,14 +384,14 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     gap: 10,
-    marginBottom: 16,
+    marginBottom: 10,
     justifyContent: 'center',
   },
   statBadge: {
     backgroundColor: KIDS_COLORS.surface,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     shadowColor: KIDS_COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 1,
@@ -438,7 +440,7 @@ const styles = StyleSheet.create({
   },
   cardBackText: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 28,
+    fontSize: 22,
     color: '#FFFFFF',
   },
 });

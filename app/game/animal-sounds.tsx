@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   Animated,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -49,6 +50,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export default function AnimalSoundsScreen() {
+  const { height: SCREEN_HEIGHT } = useWindowDimensions();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeGame } = useProgress();
@@ -65,6 +67,15 @@ export default function AnimalSoundsScreen() {
 
   const question = ANIMAL_QUESTIONS[qIndex];
   const choices = shuffle([question.correct, ...question.wrong]);
+
+  // Responsive sizing
+  const soundFontSize = Math.min(Math.round(SCREEN_HEIGHT * 0.05), 40);
+  const choiceEmojiFontSize = Math.min(Math.round(SCREEN_HEIGHT * 0.055), 44);
+  const choicePadding = Math.round(SCREEN_HEIGHT * 0.016);
+  const soundAreaPadding = Math.round(SCREEN_HEIGHT * 0.025);
+  const headerMarginBottom = Math.round(SCREEN_HEIGHT * 0.016);
+  const soundAreaMarginBottom = Math.round(SCREEN_HEIGHT * 0.016);
+  const choicesMarginBottom = Math.round(SCREEN_HEIGHT * 0.012);
 
   const handleAnswer = async (choice: AnimalChoice, choiceIndex: number) => {
     if (answered) return;
@@ -122,8 +133,8 @@ export default function AnimalSoundsScreen() {
   const stars = score >= 8 ? 3 : score >= 5 ? 2 : 1;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <View style={styles.header}>
+    <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.header, { marginBottom: headerMarginBottom }]}>
         <AnimatedPressable
           style={styles.backBtn}
           onPress={() => {
@@ -131,7 +142,7 @@ export default function AnimalSoundsScreen() {
             router.back();
           }}
         >
-          <ChevronLeft size={28} color={KIDS_COLORS.animals} />
+          <ChevronLeft size={26} color={KIDS_COLORS.animals} />
         </AnimatedPressable>
         <Text style={styles.title}>Animal Sounds 🦁</Text>
         <View style={styles.scoreBadge}>
@@ -139,9 +150,9 @@ export default function AnimalSoundsScreen() {
         </View>
       </View>
 
-      <View style={styles.soundArea}>
+      <View style={[styles.soundArea, { padding: soundAreaPadding, marginBottom: soundAreaMarginBottom }]}>
         <Text style={styles.soundLabel}>🔊 This animal says...</Text>
-        <Text style={styles.soundText}>{question.sound}</Text>
+        <Text style={[styles.soundText, { fontSize: soundFontSize }]}>{question.sound}</Text>
       </View>
 
       {showFact && (
@@ -150,7 +161,7 @@ export default function AnimalSoundsScreen() {
         </View>
       )}
 
-      <View style={styles.choicesRow}>
+      <View style={[styles.choicesRow, { marginBottom: choicesMarginBottom }]}>
         {choices.map((choice, i) => {
           const bgColor = flashAnims[i].interpolate({
             inputRange: [0, 1],
@@ -166,9 +177,9 @@ export default function AnimalSoundsScreen() {
             >
               <AnimatedPressable
                 onPress={() => handleAnswer(choice, i)}
-                style={styles.choiceInner}
+                style={[styles.choiceInner, { padding: choicePadding }]}
               >
-                <Text style={styles.choiceEmoji}>{choice.emoji}</Text>
+                <Text style={[styles.choiceEmoji, { fontSize: choiceEmojiFontSize }]}>{choice.emoji}</Text>
                 <Text style={styles.choiceName}>{choice.name}</Text>
               </AnimatedPressable>
             </Animated.View>
@@ -193,18 +204,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: KIDS_COLORS.animalsMuted,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
+    gap: 10,
   },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: KIDS_COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -216,27 +226,25 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 22,
+    fontSize: 20,
     color: KIDS_COLORS.text,
     flex: 1,
   },
   scoreBadge: {
     backgroundColor: KIDS_COLORS.animals,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
   scoreText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 14,
+    fontSize: 13,
     color: '#FFFFFF',
   },
   soundArea: {
     backgroundColor: KIDS_COLORS.surface,
-    borderRadius: 24,
-    padding: 24,
+    borderRadius: 20,
     alignItems: 'center',
-    marginBottom: 16,
     shadowColor: KIDS_COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
@@ -247,38 +255,36 @@ const styles = StyleSheet.create({
   },
   soundLabel: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 18,
+    fontSize: 16,
     color: KIDS_COLORS.textSecondary,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   soundText: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 48,
     color: KIDS_COLORS.text,
     textAlign: 'center',
   },
   factBanner: {
     backgroundColor: KIDS_COLORS.animalsMuted,
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 12,
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 10,
     borderWidth: 2,
     borderColor: KIDS_COLORS.animals,
   },
   factText: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 15,
+    fontSize: 13,
     color: KIDS_COLORS.text,
     textAlign: 'center',
   },
   choicesRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
+    gap: 10,
   },
   choiceCard: {
     flex: 1,
-    borderRadius: 20,
+    borderRadius: 18,
     shadowColor: KIDS_COLORS.shadow,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 1,
@@ -287,24 +293,22 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   choiceInner: {
-    padding: 16,
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   choiceEmoji: {
-    fontSize: 48,
   },
   choiceName: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 16,
+    fontSize: 14,
     color: KIDS_COLORS.text,
     textAlign: 'center',
   },
   progress: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 16,
+    fontSize: 14,
     color: KIDS_COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
 });

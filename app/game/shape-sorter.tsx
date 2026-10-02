@@ -5,6 +5,7 @@ import {
   StyleSheet,
   PanResponder,
   Animated,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,8 +38,9 @@ function generateRoundShapes() {
   return shuffleArray(SHAPE_POOL).slice(0, 4);
 }
 
-const HOLE_SIZE = 70;
-const SHAPE_SIZE = 60;
+// Sizes are derived dynamically in the component via useWindowDimensions
+const HOLE_SIZE_BASE = 70;
+const SHAPE_SIZE_BASE = 60;
 
 function ShapeSvg({ id, color, size, filled }: { id: string; color: string; size: number; filled: boolean }) {
   const stroke = filled ? color : '#CCCCCC';
@@ -116,6 +118,10 @@ function ShapeSvg({ id, color, size, filled }: { id: string; color: string; size
 export default function ShapeSorterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  const hScale = Math.min(height / 852, 1);
+  const HOLE_SIZE = Math.round(HOLE_SIZE_BASE * hScale);
+  const SHAPE_SIZE = Math.round(SHAPE_SIZE_BASE * hScale);
   const { completeGame } = useProgress();
 
   const [round, setRound] = useState(0);
@@ -243,8 +249,8 @@ export default function ShapeSorterScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <View style={styles.header}>
+    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, { marginBottom: 10 }]}>
         <AnimatedPressable
           style={styles.backBtn}
           onPress={() => {
@@ -252,15 +258,15 @@ export default function ShapeSorterScreen() {
             router.back();
           }}
         >
-          <ChevronLeft size={28} color={KIDS_COLORS.shapes} />
+          <ChevronLeft size={24} color={KIDS_COLORS.shapes} />
         </AnimatedPressable>
-        <Text style={styles.title}>Shape Sorter 🔷</Text>
+        <Text style={[styles.title, { fontSize: Math.round(18 * hScale) }]}>Shape Sorter 🔷</Text>
         <View style={styles.scoreBadge}>
           <Text style={styles.scoreText}>Round {round + 1}/5</Text>
         </View>
       </View>
 
-      <Text style={styles.instruction}>Drag each shape to its matching hole!</Text>
+      <Text style={[styles.instruction, { fontSize: Math.round(15 * hScale), marginBottom: 16 }]}>Drag each shape to its matching hole!</Text>
 
       {/* Holes */}
       <View style={styles.holesRow}>
@@ -351,9 +357,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: KIDS_COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -382,10 +388,10 @@ const styles = StyleSheet.create({
   },
   instruction: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 18,
+    fontSize: 15,
     color: KIDS_COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   holesRow: {
     flexDirection: 'row',
@@ -399,20 +405,20 @@ const styles = StyleSheet.create({
   },
   holeLabel: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 14,
+    fontSize: 12,
     color: KIDS_COLORS.textSecondary,
   },
   divider: {
     height: 2,
     backgroundColor: KIDS_COLORS.border,
-    marginVertical: 20,
+    marginVertical: 12,
   },
   shapesRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     flex: 1,
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   draggableShape: {
     padding: 8,

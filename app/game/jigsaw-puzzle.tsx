@@ -21,7 +21,6 @@ import { Mascot } from '@/components/Mascot';
 
 const PIECE_COUNT = 6;
 const SNAP_THRESHOLD = 80;
-const TRAY_PIECE_SIZE = 80;
 
 const PIECES = [
   { id: 0, label: 'S', name: 'Sun',     color: '#FFD700', emoji: '☀️' },
@@ -42,8 +41,11 @@ function shuffleArray<T>(arr: T[]): T[] {
 }
 
 export default function JigsawPuzzleScreen() {
-  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
   const DROP_SIZE = Math.floor((SCREEN_WIDTH - 48 - 32) / 3);
+  // Tray piece size scales with screen height, capped so it fits
+  const TRAY_PIECE_SIZE = Math.min(Math.round(SCREEN_HEIGHT * 0.09), 72);
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeGame } = useProgress();
@@ -165,7 +167,7 @@ export default function JigsawPuzzleScreen() {
 
   return (
     <View style={styles.outerWrapper}>
-      <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
+      <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
         {/* Header */}
         <View style={styles.header}>
           <AnimatedPressable
@@ -175,10 +177,10 @@ export default function JigsawPuzzleScreen() {
               router.back();
             }}
           >
-            <ChevronLeft size={28} color={KIDS_COLORS.shapes} />
+            <ChevronLeft size={26} color={KIDS_COLORS.shapes} />
           </AnimatedPressable>
           <Text style={styles.title}>Jigsaw Puzzle 🧩</Text>
-          <Mascot size={56} animate={false} expression="happy" />
+          <Mascot size={44} animate={false} expression="happy" />
         </View>
 
         <Text style={styles.instruction}>Drag each piece to its matching spot!</Text>
@@ -199,10 +201,7 @@ export default function JigsawPuzzleScreen() {
               dropZoneRefs.current.forEach((ref, pieceId) => {
                 if (ref) {
                   (ref as any).measureInWindow((x: number, y: number, w: number, h: number) => {
-                    dropZoneLayouts.current[pieceId] = {
-                      x: x + w / 2,
-                      y: y + h / 2,
-                    };
+                    dropZoneLayouts.current[pieceId] = { x: x + w / 2, y: y + h / 2 };
                   });
                 }
               });
@@ -219,10 +218,7 @@ export default function JigsawPuzzleScreen() {
                   if (ref) {
                     setTimeout(() => {
                       (ref as any).measureInWindow((x: number, y: number, w: number, h: number) => {
-                        dropZoneLayouts.current[piece.id] = {
-                          x: x + w / 2,
-                          y: y + h / 2,
-                        };
+                        dropZoneLayouts.current[piece.id] = { x: x + w / 2, y: y + h / 2 };
                       });
                     }, 200);
                   }
@@ -245,7 +241,7 @@ export default function JigsawPuzzleScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.trayContent}
+          contentContainerStyle={[styles.trayContent, { gap: 10 }]}
           style={styles.tray}
         >
           {shuffledOrder.map(pieceId => {
@@ -259,6 +255,8 @@ export default function JigsawPuzzleScreen() {
                 style={[
                   styles.pieceWrapper,
                   {
+                    width: TRAY_PIECE_SIZE,
+                    height: TRAY_PIECE_SIZE,
                     transform: [{ scale: bounceAnims[pieceId] }],
                     zIndex: isSnapped ? 0 : 10,
                     opacity: pieceOpacity,
@@ -276,7 +274,7 @@ export default function JigsawPuzzleScreen() {
                 }}
                 {...panResponders[pieceId].panHandlers}
               >
-                <TrayPiece piece={piece} />
+                <TrayPiece piece={piece} size={TRAY_PIECE_SIZE} />
               </Animated.View>
             );
           })}
@@ -304,14 +302,14 @@ export default function JigsawPuzzleScreen() {
         />
       </View>
 
-      {/* Drag overlay — lives outside padded container so position:absolute left:0 top:0
-          maps to true screen origin. dragOverlayPos holds screen coords. */}
       {draggingPiece !== null && (
         <Animated.View
           style={[
             styles.dragOverlay,
             {
               pointerEvents: 'none',
+              width: TRAY_PIECE_SIZE,
+              height: TRAY_PIECE_SIZE,
               transform: [
                 { translateX: dragOverlayPos.x },
                 { translateY: dragOverlayPos.y },
@@ -319,7 +317,7 @@ export default function JigsawPuzzleScreen() {
             },
           ]}
         >
-          <TrayPiece piece={draggingPiece} />
+          <TrayPiece piece={draggingPiece} size={TRAY_PIECE_SIZE} />
         </Animated.View>
       )}
     </View>
@@ -336,16 +334,13 @@ interface PieceData {
   emoji: string;
 }
 
-function TrayPiece({ piece }: { piece: PieceData }) {
+function TrayPiece({ piece, size }: { piece: PieceData; size: number }) {
+  const emojiFontSize = Math.round(size * 0.36);
+  const labelFontSize = Math.round(size * 0.22);
   return (
-    <View
-      style={[
-        styles.trayPiece,
-        { backgroundColor: piece.color },
-      ]}
-    >
-      <Text style={styles.trayPieceEmoji}>{piece.emoji}</Text>
-      <Text style={styles.trayPieceLabel}>{piece.label}</Text>
+    <View style={[styles.trayPiece, { backgroundColor: piece.color, width: size, height: size }]}>
+      <Text style={[styles.trayPieceEmoji, { fontSize: emojiFontSize }]}>{piece.emoji}</Text>
+      <Text style={[styles.trayPieceLabel, { fontSize: labelFontSize }]}>{piece.label}</Text>
     </View>
   );
 }
@@ -376,19 +371,19 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     overflow: 'visible',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 8,
+    gap: 10,
+    marginBottom: 6,
   },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: KIDS_COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -400,34 +395,34 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 22,
+    fontSize: 20,
     color: KIDS_COLORS.text,
     flex: 1,
   },
   instruction: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 16,
+    fontSize: 14,
     color: KIDS_COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   progressRow: {
-    marginBottom: 12,
-    gap: 6,
+    marginBottom: 10,
+    gap: 5,
   },
   progressText: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 14,
+    fontSize: 13,
     color: KIDS_COLORS.textSecondary,
     textAlign: 'center',
   },
   progressBarBg: {
-    height: 8,
+    height: 7,
     backgroundColor: KIDS_COLORS.border,
     borderRadius: 4,
   },
   progressBarFill: {
-    height: 8,
+    height: 7,
     backgroundColor: KIDS_COLORS.shapes,
     borderRadius: 4,
   },
@@ -440,27 +435,24 @@ const styles = StyleSheet.create({
   divider: {
     height: 2,
     backgroundColor: KIDS_COLORS.border,
-    marginVertical: 12,
+    marginVertical: 10,
   },
   trayLabel: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 16,
+    fontSize: 14,
     color: KIDS_COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   tray: {
     flexGrow: 0,
   },
   trayContent: {
-    gap: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
     alignItems: 'center',
   },
   pieceWrapper: {
-    width: TRAY_PIECE_SIZE,
-    height: TRAY_PIECE_SIZE,
     shadowColor: KIDS_COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
@@ -471,8 +463,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     top: 0,
-    width: TRAY_PIECE_SIZE,
-    height: TRAY_PIECE_SIZE,
     zIndex: 9999,
     elevation: 9999,
     shadowColor: KIDS_COLORS.shadow,
@@ -480,11 +470,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 12,
   },
-  // Tray piece
   trayPiece: {
-    width: TRAY_PIECE_SIZE,
-    height: TRAY_PIECE_SIZE,
-    borderRadius: 16,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
@@ -496,19 +483,16 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   trayPieceEmoji: {
-    fontSize: 28,
   },
   trayPieceLabel: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 18,
     color: '#fff',
     textShadowColor: 'rgba(0,0,0,0.4)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
-  // Empty drop zone
   emptyDropZone: {
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 3,
     borderColor: KIDS_COLORS.shapes,
     borderStyle: 'dashed',
@@ -520,9 +504,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_800ExtraBold',
     opacity: 0.4,
   },
-  // Snapped drop zone
   snappedDropZone: {
-    borderRadius: 16,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,

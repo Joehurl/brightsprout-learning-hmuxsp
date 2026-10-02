@@ -133,9 +133,10 @@ function PairCard({ card, isSelected, isMatched, shakeAnim, scaleAnim, onPress, 
 }
 
 export default function PictureWordMatchScreen() {
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const SCREEN_WIDTH = Math.min(width, 600);
   const CARD_SIZE = (SCREEN_WIDTH - 48 - CARD_MARGIN * (COLS - 1)) / COLS;
+  const hScale = Math.min(height / 852, 1);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeGame } = useProgress();
@@ -290,9 +291,9 @@ export default function PictureWordMatchScreen() {
   const starsLabel = earnedStars === 3 ? '⭐⭐⭐ Amazing!' : earnedStars === 2 ? '⭐⭐ Great job!' : '⭐ You did it!';
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12, maxWidth: 600, alignSelf: 'center', width: '100%' }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 8, maxWidth: 600, alignSelf: 'center', width: '100%' }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { marginBottom: 8 }]}>
         <AnimatedPressable
           style={styles.backBtn}
           onPress={() => {
@@ -300,24 +301,24 @@ export default function PictureWordMatchScreen() {
             router.back();
           }}
         >
-          <ChevronLeft size={28} color={KIDS_COLORS.shapes} />
+          <ChevronLeft size={24} color={KIDS_COLORS.shapes} />
         </AnimatedPressable>
-        <Text style={styles.title}>Picture Match 🖼️</Text>
-        <Mascot size={56} animate={false} expression="happy" />
+        <Text style={[styles.title, { fontSize: Math.round(18 * hScale) }]}>Picture Match 🖼️</Text>
+        <Mascot size={Math.round(44 * hScale)} animate={false} expression="happy" />
       </View>
 
       {/* Stats */}
-      <View style={styles.statsRow}>
+      <View style={[styles.statsRow, { marginBottom: 8 }]}>
         <View style={styles.statBadge}>
-          <Text style={styles.statBadgeText}>❌ Mistakes: {mistakes}</Text>
+          <Text style={[styles.statBadgeText, { fontSize: Math.round(13 * hScale) }]}>❌ Mistakes: {mistakes}</Text>
         </View>
         <View style={styles.statBadge}>
-          <Text style={styles.statBadgeText}>✅ {matchedCount}/{PAIRS.length} matched</Text>
+          <Text style={[styles.statBadgeText, { fontSize: Math.round(13 * hScale) }]}>✅ {matchedCount}/{PAIRS.length} matched</Text>
         </View>
       </View>
 
       {/* Instruction */}
-      <Text style={styles.instruction}>Tap a picture, then tap its matching word!</Text>
+      <Text style={[styles.instruction, { marginBottom: 10, fontSize: Math.round(13 * hScale) }]}>Tap a picture, then tap its matching word!</Text>
 
       {/* Card Grid */}
       <View style={styles.grid}>
@@ -365,9 +366,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: KIDS_COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -386,14 +387,14 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     gap: 10,
-    marginBottom: 10,
+    marginBottom: 8,
     justifyContent: 'center',
   },
   statBadge: {
     backgroundColor: KIDS_COLORS.surface,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     shadowColor: KIDS_COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 1,
@@ -440,11 +441,11 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   cardEmoji: {
-    fontSize: 28,
+    fontSize: 22,
   },
   cardWord: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 13,
+    fontSize: 11,
     color: '#FFFFFF',
     textAlign: 'center',
     paddingHorizontal: 4,

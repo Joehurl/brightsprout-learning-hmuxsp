@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   Animated,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -49,6 +50,8 @@ function shuffle<T>(arr: T[]): T[] {
 export default function PhonicsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  const hScale = Math.min(height / 852, 1);
   const { completeGame } = useProgress();
 
   const [qIndex, setQIndex] = useState(0);
@@ -115,8 +118,8 @@ export default function PhonicsScreen() {
   const stars = score >= 8 ? 3 : score >= 5 ? 2 : 1;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <View style={styles.header}>
+    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, { marginBottom: 10 }]}>
         <AnimatedPressable
           style={styles.backBtn}
           onPress={() => {
@@ -124,26 +127,26 @@ export default function PhonicsScreen() {
             router.back();
           }}
         >
-          <ChevronLeft size={28} color={KIDS_COLORS.letters} />
+          <ChevronLeft size={24} color={KIDS_COLORS.letters} />
         </AnimatedPressable>
-        <Text style={styles.title}>Phonics Fun 🔊</Text>
+        <Text style={[styles.title, { fontSize: Math.round(18 * hScale) }]}>Phonics Fun 🔊</Text>
         <View style={styles.scoreBadge}>
           <Text style={styles.scoreText}>{score}/{qIndex + (answered ? 1 : 0)}</Text>
         </View>
       </View>
 
-      <View style={styles.questionArea}>
-        <View style={styles.letterCircle}>
-          <Text style={styles.letterText}>{question.letter}</Text>
+      <View style={[styles.questionArea, { marginBottom: 10 }]}>
+        <View style={[styles.letterCircle, { width: Math.round(90 * hScale), height: Math.round(90 * hScale), borderRadius: Math.round(45 * hScale), marginBottom: 10 }]}>
+          <Text style={[styles.letterText, { fontSize: Math.round(54 * hScale), lineHeight: Math.round(62 * hScale) }]}>{question.letter}</Text>
         </View>
-        <Text style={styles.questionText}>Which one starts with {question.letter}?</Text>
+        <Text style={[styles.questionText, { fontSize: Math.round(18 * hScale) }]}>Which one starts with {question.letter}?</Text>
       </View>
 
       {feedback === 'wrong' && (
         <Text style={styles.tryAgain}>Try again! 🤔</Text>
       )}
 
-      <View style={styles.choicesRow}>
+      <View style={[styles.choicesRow, { marginBottom: 10 }]}>
         {choices.map((choice, i) => {
           const bgColor = flashAnims[i].interpolate({
             inputRange: [0, 1],
@@ -161,15 +164,15 @@ export default function PhonicsScreen() {
                 onPress={() => handleAnswer(choice)}
                 style={styles.choiceInner}
               >
-                <Text style={styles.choiceEmoji}>{choice.emoji}</Text>
-                <Text style={styles.choiceWord}>{choice.word}</Text>
+                <Text style={[styles.choiceEmoji, { fontSize: Math.round(38 * hScale) }]}>{choice.emoji}</Text>
+                <Text style={[styles.choiceWord, { fontSize: Math.round(14 * hScale) }]}>{choice.word}</Text>
               </AnimatedPressable>
             </Animated.View>
           );
         })}
       </View>
 
-      <Text style={styles.progress}>Question {qIndex + 1} of 10</Text>
+      <Text style={[styles.progress, { marginBottom: 12 }]}>Question {qIndex + 1} of 10</Text>
 
       <GameCompleteOverlay
         visible={showComplete}
@@ -195,9 +198,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: KIDS_COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -226,33 +229,33 @@ const styles = StyleSheet.create({
   },
   questionArea: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
     flex: 1,
     justifyContent: 'center',
   },
   letterCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     backgroundColor: KIDS_COLORS.letters,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
     shadowColor: KIDS_COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
-    shadowRadius: 12,
+    shadowRadius: 10,
     elevation: 4,
   },
   letterText: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 72,
+    fontSize: 54,
     color: '#FFFFFF',
-    lineHeight: 80,
+    lineHeight: 62,
   },
   questionText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 22,
+    fontSize: 18,
     color: KIDS_COLORS.text,
     textAlign: 'center',
   },
@@ -265,12 +268,12 @@ const styles = StyleSheet.create({
   },
   choicesRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
+    gap: 10,
+    marginBottom: 10,
   },
   choiceCard: {
     flex: 1,
-    borderRadius: 20,
+    borderRadius: 16,
     shadowColor: KIDS_COLORS.shadow,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 1,
@@ -279,24 +282,24 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   choiceInner: {
-    padding: 16,
+    padding: 12,
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   choiceEmoji: {
-    fontSize: 48,
+    fontSize: 38,
   },
   choiceWord: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 16,
+    fontSize: 14,
     color: KIDS_COLORS.text,
     textAlign: 'center',
   },
   progress: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 16,
+    fontSize: 14,
     color: KIDS_COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 12,
   },
 });

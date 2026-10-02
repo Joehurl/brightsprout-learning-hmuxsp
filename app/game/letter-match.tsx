@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   Animated,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,6 +38,7 @@ interface CardState {
 }
 
 export default function LetterMatchScreen() {
+  const { height: SCREEN_HEIGHT } = useWindowDimensions();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeGame } = useProgress();
@@ -59,6 +61,13 @@ export default function LetterMatchScreen() {
 
   const shakeAnims = useRef(Array.from({ length: 8 }, () => new Animated.Value(0))).current;
   const flashAnims = useRef(Array.from({ length: 8 }, () => new Animated.Value(0))).current;
+
+  // Responsive card sizing
+  const cardSize = Math.min(Math.round(SCREEN_HEIGHT * 0.1), 80);
+  const cardLetterFontSize = Math.round(cardSize * 0.48);
+  const instructionMarginBottom = Math.round(SCREEN_HEIGHT * 0.02);
+  const headerMarginBottom = Math.round(SCREEN_HEIGHT * 0.016);
+  const columnGap = Math.round(SCREEN_HEIGHT * 0.012);
 
   const shakeCard = (indices: number[]) => {
     const anims = indices.map(i =>
@@ -100,13 +109,8 @@ export default function LetterMatchScreen() {
         const newScore = score + 1;
         setScore(newScore);
 
-        // Check if round complete
-        const allMatched = upper.filter((c, i) => i !== ui || c.matched).every(c => c.matched) &&
-          upper[ui] !== undefined;
-
         const remainingUnmatched = upper.filter((c, i) => i !== ui && !c.matched).length;
         if (remainingUnmatched === 0) {
-          // Round complete
           const nextRound = roundIndex + 1;
           if (nextRound >= 5) {
             completeGame('letter-match', 3).then(() => setShowComplete(true));
@@ -165,8 +169,8 @@ export default function LetterMatchScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <View style={styles.header}>
+    <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.header, { marginBottom: headerMarginBottom }]}>
         <AnimatedPressable
           style={styles.backBtn}
           onPress={() => {
@@ -174,7 +178,7 @@ export default function LetterMatchScreen() {
             router.back();
           }}
         >
-          <ChevronLeft size={28} color={KIDS_COLORS.letters} />
+          <ChevronLeft size={26} color={KIDS_COLORS.letters} />
         </AnimatedPressable>
         <Text style={styles.title}>Letter Match 🔤</Text>
         <View style={styles.scoreBadge}>
@@ -182,11 +186,13 @@ export default function LetterMatchScreen() {
         </View>
       </View>
 
-      <Text style={styles.instruction}>Match the uppercase to lowercase!</Text>
+      <Text style={[styles.instruction, { marginBottom: instructionMarginBottom }]}>
+        Match the uppercase to lowercase!
+      </Text>
 
       <View style={styles.gameArea}>
         {/* Uppercase column */}
-        <View style={styles.column}>
+        <View style={[styles.column, { gap: columnGap }]}>
           <Text style={styles.columnLabel}>BIG</Text>
           {upper.map((card, i) => {
             const bgColor = flashAnims[i].interpolate({
@@ -198,6 +204,7 @@ export default function LetterMatchScreen() {
                 key={i}
                 style={[
                   styles.card,
+                  { width: cardSize, height: cardSize },
                   card.matched && styles.cardMatched,
                   { transform: [{ translateX: shakeAnims[i] }], backgroundColor: bgColor },
                 ]}
@@ -207,7 +214,7 @@ export default function LetterMatchScreen() {
                   disabled={card.matched}
                   style={styles.cardInner}
                 >
-                  <Text style={[styles.cardLetter, card.matched && styles.cardLetterMatched]}>
+                  <Text style={[styles.cardLetter, { fontSize: cardLetterFontSize }, card.matched && styles.cardLetterMatched]}>
                     {card.letter}
                   </Text>
                 </AnimatedPressable>
@@ -217,7 +224,7 @@ export default function LetterMatchScreen() {
         </View>
 
         {/* Lowercase column */}
-        <View style={styles.column}>
+        <View style={[styles.column, { gap: columnGap }]}>
           <Text style={styles.columnLabel}>small</Text>
           {lower.map((card, i) => {
             const bgColor = flashAnims[i + 4].interpolate({
@@ -229,6 +236,7 @@ export default function LetterMatchScreen() {
                 key={i}
                 style={[
                   styles.card,
+                  { width: cardSize, height: cardSize },
                   card.matched && styles.cardMatched,
                   { transform: [{ translateX: shakeAnims[i + 4] }], backgroundColor: bgColor },
                 ]}
@@ -238,7 +246,7 @@ export default function LetterMatchScreen() {
                   disabled={card.matched}
                   style={styles.cardInner}
                 >
-                  <Text style={[styles.cardLetter, card.matched && styles.cardLetterMatched]}>
+                  <Text style={[styles.cardLetter, { fontSize: cardLetterFontSize }, card.matched && styles.cardLetterMatched]}>
                     {card.letter}
                   </Text>
                 </AnimatedPressable>
@@ -263,18 +271,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: KIDS_COLORS.lettersMuted,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
+    gap: 10,
   },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: KIDS_COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -286,49 +293,46 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 22,
+    fontSize: 20,
     color: KIDS_COLORS.text,
     flex: 1,
   },
   scoreBadge: {
     backgroundColor: KIDS_COLORS.letters,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
   scoreText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 14,
+    fontSize: 13,
     color: '#FFFFFF',
   },
   instruction: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 18,
+    fontSize: 16,
     color: KIDS_COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 24,
   },
   gameArea: {
     flex: 1,
     flexDirection: 'row',
-    gap: 24,
+    gap: 20,
     justifyContent: 'center',
+    paddingBottom: 16,
   },
   column: {
     flex: 1,
-    gap: 12,
     alignItems: 'center',
   },
   columnLabel: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 16,
+    fontSize: 14,
     color: KIDS_COLORS.textSecondary,
     marginBottom: 4,
   },
   card: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
+    borderRadius: 18,
     shadowColor: KIDS_COLORS.shadow,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 1,
@@ -346,7 +350,6 @@ const styles = StyleSheet.create({
   },
   cardLetter: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 40,
     color: KIDS_COLORS.text,
   },
   cardLetterMatched: {
